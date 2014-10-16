@@ -345,7 +345,7 @@ my $resultat=undef;
 if (defined ($o_cisco)) {
 
   # Get Cisco memory table
-  $resultat = (Net::SNMP->VERSION < 4) ?
+  $resultat = (Net::SNMP->VERSION lt 4) ?
                  $session->get_table($cisco_mem_pool)
                  :$session->get_table(Baseoid => $cisco_mem_pool);
   
@@ -428,12 +428,12 @@ if (defined ($o_cisco_nexus)) {
   my ($used,$free)=(0,0);
   my (@get_used_free) = ();
   push (@get_used_free, $cisco_nexus_used);
-  $used =  (Net::SNMP->VERSION < 4) ?
+  $used =  (Net::SNMP->VERSION lt 4) ?
                  $session->get_request(@get_used_free)
                  :$session->get_request(-varbindlist => [ $cisco_nexus_used ]);
   @get_used_free = ();
   push (@get_used_free, $cisco_nexus_used);
-  $free =  (Net::SNMP->VERSION < 4) ?
+  $free =  (Net::SNMP->VERSION lt 4) ?
                  $session->get_request(@get_used_free)
                  :$session->get_request(-varbindlist => [ $cisco_nexus_free ]);
   if (!defined($used) || !defined($free)) {
@@ -486,12 +486,12 @@ if (defined ($o_foundry)) {
   my ($total,$used,$free)=(0,0);
   my (@get_total_free) = ();
   push (@get_total_free, $foundry_total);
-  $total =  (Net::SNMP->VERSION < 4) ?
+  $total =  (Net::SNMP->VERSION lt 4) ?
                  $session->get_request(@get_total_free)
                  :$session->get_request(-varbindlist => [ $foundry_total ]);
   @get_total_free = ();
   push (@get_total_free, $foundry_free);
-  $free =  (Net::SNMP->VERSION < 4) ?
+  $free =  (Net::SNMP->VERSION lt 4) ?
                  $session->get_request(@get_total_free)
                  :$session->get_request(-varbindlist => [ $foundry_free ]);
   if (!defined($total) || !defined($free)) {
@@ -543,12 +543,12 @@ if (defined ($o_forti)) {
   my ($total,$used,$free)=(0,0);
   my (@get_total_free) = ();
   push (@get_total_free, $forti_total);
-  $total =  (Net::SNMP->VERSION < 4) ?
+  $total =  (Net::SNMP->VERSION lt 4) ?
                  $session->get_request(@get_total_free)
                  :$session->get_request(-varbindlist => [ $forti_total ]);
   @get_total_free = ();
   push (@get_total_free, $forti_used);
-  $free =  (Net::SNMP->VERSION < 4) ?
+  $free =  (Net::SNMP->VERSION lt 4) ?
                  $session->get_request(@get_total_free)
                  :$session->get_request(-varbindlist => [ $forti_used ]);
   if (!defined($total) || !defined($free)) {
@@ -600,7 +600,7 @@ if (defined ($o_forti_50)) {
   my (@get_total_used) = ();
   @get_total_used = ();
   push (@get_total_used, $forti_used_50);
-  $used =  (Net::SNMP->VERSION < 4) ?
+  $used =  (Net::SNMP->VERSION lt 4) ?
                  $session->get_request(@get_total_used)
                  :$session->get_request(-varbindlist => [ $forti_used_50 ]);
   if (!defined($used)) {
@@ -647,7 +647,7 @@ if (defined ($o_forti_50)) {
 if (defined ($o_hp)) {
 
   # Get hp memory table
-  $resultat = (Net::SNMP->VERSION < 4) ?
+  $resultat = (Net::SNMP->VERSION lt 4) ?
                  $session->get_table($hp_mem_pool)
                  :$session->get_table(Baseoid => $hp_mem_pool);
   
@@ -716,7 +716,7 @@ if (defined ($o_hp)) {
 if (defined ($o_netsnmp)) {
 
   # Get NetSNMP memory values
-  $resultat = (Net::SNMP->VERSION < 4) ?
+  $resultat = (Net::SNMP->VERSION lt 4) ?
 		$session->get_request(@nets_oids)
 		:$session->get_request(-varbindlist => \@nets_oids);
   
