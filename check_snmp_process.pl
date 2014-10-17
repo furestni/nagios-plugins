@@ -396,11 +396,11 @@ my $resultat=undef;
 my %result_cons=();
 my ($getall_run,$getall_cpu,$getall_mem)=(undef,undef,undef);
 if ( !defined ($o_path) ) {
-  $resultat = (Net::SNMP->VERSION < 4) ? 
+  $resultat = (Net::SNMP->VERSION lt 4) ? 
 		$session->get_table($run_name_table)
 		: $session->get_table(Baseoid => $run_name_table);
 } else {
-  $resultat = (Net::SNMP->VERSION < 4) ?
+  $resultat = (Net::SNMP->VERSION lt 4) ?
 	$session->get_table($run_path_table)
 	:$session->get_table(Baseoid => $run_path_table);
 }
@@ -412,7 +412,7 @@ if (!defined($resultat)) {
 }
 
 if (defined ($o_get_all)) {
-  $getall_run = (Net::SNMP->VERSION < 4) ?
+  $getall_run = (Net::SNMP->VERSION lt 4) ?
 	$session->get_table($proc_run_state )
 	:$session->get_table(Baseoid => $proc_run_state );
   if (!defined($getall_run)) {
@@ -423,7 +423,7 @@ if (defined ($o_get_all)) {
   foreach my $key ( keys %$getall_run) {
     $result_cons{$key}=$$getall_run{$key};
   } 
-  $getall_cpu = (Net::SNMP->VERSION < 4) ?
+  $getall_cpu = (Net::SNMP->VERSION lt 4) ?
 	$session->get_table($proc_cpu_table)
 	: $session->get_table(Baseoid => $proc_cpu_table);
   if (!defined($getall_cpu)) {
@@ -434,7 +434,7 @@ if (defined ($o_get_all)) {
   foreach my $key ( keys %$getall_cpu) {
     $result_cons{$key}=$$getall_cpu{$key};
   } 
-  $getall_mem = (Net::SNMP->VERSION < 4) ? 
+  $getall_mem = (Net::SNMP->VERSION lt 4) ? 
 	$session->get_table($proc_mem_table)
 	: $session->get_table(Baseoid => $proc_mem_table);
   if (!defined($getall_mem)) {
@@ -509,7 +509,7 @@ if (!defined ($o_get_all)) {
 	 $toid[$i]=$oids[$i+$tmp_index];
 	 #verb("$i :  $toid[$i] : $oids[$i+$tmp_index]");
       }
-      $tmp_result = (Net::SNMP->VERSION < 4) ? 
+      $tmp_result = (Net::SNMP->VERSION lt 4) ? 
 	    $session->get_request(@toid)
 		: $session->get_request(Varbindlist => \@toid);
       if (!defined($tmp_result)) { printf("ERROR: running table : %s.\n", $session->error); $session->close;
@@ -521,7 +521,7 @@ if (!defined ($o_get_all)) {
     }  
 
   } else {
-    $result = (Net::SNMP->VERSION < 4) ? 
+    $result = (Net::SNMP->VERSION lt 4) ? 
 		$session->get_request(@oids)
 		: $session->get_request(Varbindlist => \@oids);
     if (!defined($result)) { printf("ERROR: running table : %s.\n", $session->error); $session->close;
