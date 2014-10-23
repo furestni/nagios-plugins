@@ -1,0 +1,166 @@
+#! /usr/bin/perl -w
+#
+# check_snmp_apc_pdu v1.0 plugin for nagios
+#
+# checks with SNMP the power status of APC PDUs
+# be sure to have the required MIB (PowerNet-MIB) ready in the snmp mib path
+# default path is /usr/share/snmp/mibs
+#
+# Copyright Notice: GPL
+#
+# History:
+#
+# v1.0 Rouven Homann - rouven.homann@cimt-ag.de
+#       + Initial Release
+#
+
+#use strict;
+use SNMP;
+use Getopt::Std;
+use FindBin;
+use lib $FindBin::Bin;
+use utils qw($TIMEOUT %ERRORS &print_revision &support);
+use vars qw($PROGNAME);
+use Getopt::Long;
+use vars qw($opt_V $opt_h $opt_H $opt_C $verbose $opt_c $opt_w); 
+
+my $PROGNAME = "check_snmp_apc_pdu";
+my $PROGVERSION = '1.0';
+
+$ENV{'MIBS'}="ALL";						# PowerNet-MIB required 	 
+
+sub print_help ();
+sub print_usage ();
+
+Getopt::Long::Configure('bundling');
+GetOptions ("V"   => \$opt_V, "version"    => \$opt_V,
+        "h"   => \$opt_h, "help"       => \$opt_h,
+        "v" => \$verbose, "verbose"  => \$verbose,
+        "w=s" => \$opt_w, "warning=s"  => \$opt_w,
+	"H=s" => \$opt_H, "host=s" => \$opt_H,
+	"C=s" => \$opt_C, "community=s" => \$opt_C,
+        "c=s" => \$opt_c, "critical=s" => \$opt_c);
+
+if ($opt_V) {
+    print_revision($PROGNAME,'$Revision: '.$PROGVERSION.'$');
+    exit $ERRORS{'UNKNOWN'};
+}
+
+if ($opt_h) {
+    print_help();
+    exit $ERRORS{'UNKNOWN'};
+}
+
+print_usage() unless ($opt_H && $opt_C);
+
+
+my @APC_INFO = &snmpconnect();
+
+### get default thresholds from snmp
+if ($opt_c) {
+    $critical = $1 if ($opt_c =~ /([0-9]+)/);
+} else { 
+    $critical = $APC_INFO[7];
+}
+
+if ($opt_w) {
+    $warning = $1 if ($opt_w =~ /([0-9]+)/);
+} else { 
+    $warning = $APC_INFO[6];
+}
+
+if ($APC_INFO[2] == 1) { $APC_INFO[2]='Ok'; } elsif ($APC_INFO[2] == 0) { $APC_INFO[2]='Down'; } else { $APC_INFO[2]='Unknown'; };	# PDU's own Powerstatus
+if ($APC_INFO[3] == 1) { $APC_INFO[3]='Ok'; } elsif ($APC_INFO[3] == 0) { $APC_INFO[3]='Down'; } else { $APC_INFO[3]='Unknown'; };	# PDU's own Powerstatus
+
+## CRITICAL
+if (($APC_INFO[5]>=$critical) || ($APC_INFO[2] eq 'Down') || ($APC_INFO[3] eq 'Down')) {
+    if ($verbose) { 
+	print "CRITICAL: Model: $APC_INFO[0], Serial: $APC_INFO[1], Power1: $APC_INFO[2], Power2: $APC_INFO[3], Ports: $APC_INFO[4], Load: $APC_INFO[5]A";	# Verbose Output
+    } else { 
+	if (($APC_INFO[2] eq 'Unknown') || ($APC_INFO[3] eq 'Unknown')) {
+	    print "CRITICAL: Load Critical, $APC_INFO[5]A reached!";
+	} else { 
+	    print "CRITICAL: Load Critical, $APC_INFO[5]A reached!, Power1: $APC_INFO[2], Power2: $APC_INFO[3]";	# Small Output
+	};
+    };
+    exit $ERRORS{'CRITICAL'};
+} 
+## WARNING
+elsif (($APC_INFO[5] >= $warning) && ($APC_INFO[5] < $critical)) {
+    if ($verbose) { 
+	print "WARNING: Model: $APC_INFO[0], Serial: $APC_INFO[1], Power1: $APC_INFO[2], Power2: $APC_INFO[3], Ports: $APC_INFO[4], Load: $APC_INFO[5]A";	# Verbose Output
+
+    } else {
+	if (($APC_INFO[2] eq 'Unknown') || ($APC_INFO[3] eq 'Unknown')) {
+	    print "Warning Load Warning, $APC_INFO[5]A reached!";
+	} else { 
+	    print "WARNING: Load Warning, $APC_INFO[5]A reached!, Power1: $APC_INFO[2], Power2: $APC_INFO[3]";	# Small Output
+	};
+    };
+    exit $ERRORS{'WARNING'};
+} 
+## OK
+elsif (($APC_INFO[5] < $warning) && ($APC_INFO[2] eq 'Ok') && ($APC_INFO[3] eq 'Ok')) {
+    if ($verbose) { 
+	print "OK: Model: $APC_INFO[0], Serial: $APC_INFO[1], Power1: $APC_INFO[2], Power2: $APC_INFO[3], Ports: $APC_INFO[4], Load: $APC_INFO[5]A";	# Verbose Output
+    } else { 
+	if (($APC_INFO[2] eq 'Unknown') || ($APC_INFO[3] eq 'Unknown')) {
+	    print "OK: Load $APC_INFO[5]A";
+	} else { 
+	print "OK: Load $APC_INFO[5]A, Power1: $APC_INFO[2], Power2: $APC_INFO[3]";	# Small Output
+	};
+    };
+    exit $ERRORS{'OK'};
+} 
+## UNKNOWN
+else {
+    print "UNKNOWN: An error occured while running snmp command, check MIB and oids";
+    exit $ERRORS{'UNKNOWN'};    
+}
+
+sub snmpconnect () {
+    my $SESSION = new SNMP::Session (DestHost => $opt_H,
+                            	    Community => $opt_C,
+                            	    Version => 1);
+				    
+    # Populate a VarList with OID values.
+    my $APC_VLIST =  new SNMP::VarList(['sPDUIdentModelNumber'],               	#0
+	                            ['sPDUIdentSerialNumber'],                  #1
+    	                            ['rPDUPowerSupply1Status'],             	#2
+    		                    ['rPDUPowerSupply2Status'],             	#3
+            		            ['rPDUOutletDevNumCntrlOutlets'],           #4
+            	                    ['rPDULoadStatusPhaseLoad'],		#5
+				    ['rPDULoadConfigNearOverloadThreshold'],	#6
+				    ['rPDULoadConfigOverloadThreshold']);  	#7
+
+    # Pass the VarList to getnext building an array of the output
+    &errorexit() unless my @APC_INFO = $SESSION->getnext($APC_VLIST);
+     
+    $APC_INFO[0] =~ s/\"//g;        				# Ditch the quotes.
+    $APC_INFO[1] =~ s/\"//g;
+    $APC_INFO[5] = $APC_INFO[5] / 10;
+    return @APC_INFO;
+}
+
+sub errorexit () {
+    print "UNKNOWN: An error occured while running snmp command, possible wrong pdu or mib not present!";
+    exit $ERRORS{'UNKNOWN'};    
+}
+
+sub print_usage () {
+    print "Usage: $PROGNAME -H <Hostname> -C <Community> [-w <warn>] [-c <crit>] [-v] [-h]\n";
+    exit $ERRORS{'UNKNOWN'} unless ($opt_h);
+}
+
+sub print_help () {
+    print_revision($PROGNAME,'$Revision: '.$PROGVERSION.' $');
+    print "Copyright (c) 2005 Rouven Homann\n";
+    print "\n";
+    print_usage();
+    print "\n";
+    print "-H <Hostname> = Hostname or IP-Address.\n";
+    print "-C <Community> = Community read password.\n";
+    print "-v = Verbose Output.\n";
+    print "-h = This screen.\n\n";
+    support();
+}
