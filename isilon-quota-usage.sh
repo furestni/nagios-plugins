@@ -169,20 +169,21 @@ fi
 
 #Display Quota Usage with alert
 PERCENT_USED=$( echo "$USED_GB*100/$QUOTA_GB"|bc )
+USED_T=$( echo "$USED_GB"*1000000000|bc )
+QUOTA_T=$( echo "$QUOTA_GB"*1000000000|bc) 
+FREE_T=$( echo "$FREE_GB"*1000000000|bc) 
 
-#if [ $FREE_GB2 -le "$3" ]
 if [ $PERCENT_USED -gt "$critical" ]
 then
-  echo "CRITICAL - Used = ${USED_GB}G, Quota = ${QUOTA_GB}G, Free = ${FREE_GB}G, used=$PERCENT_USED% | used=$PERCENT_USED QuotaUsage=${USED_GB} ; QuotaTotal=${QUOTA_GB} ; QuotaFree=${FREE_GB}"
+  echo "CRITICAL - Used = ${USED_GB}G, Quota = ${QUOTA_GB}G, Free = ${FREE_GB}G, used=$PERCENT_USED% | used=$PERCENT_USED%  QuotaUsage=${USED_T}  QuotaTotal=${QUOTA_T}  QuotaFree=${FREE_T}"
   exit 2
  else
-#  if [ $FREE_GB2 -le "$2" ]
   if [ $PERCENT_USED -gt "$warning"  ]
    then
-     echo "WARNING - Used = ${USED_GB}G, Quota = ${QUOTA_GB}G, Free = ${FREE_GB}G, used=$PERCENT_USED% | used=$PERCENT_USED QuotaUsage=${USED_GB} ; QuotaTotal=${QUOTA_GB} ; QuotaFree=${FREE_GB}"
+     echo "WARNING - Used = ${USED_GB}G, Quota = ${QUOTA_GB}G, Free = ${FREE_GB}G, used=$PERCENT_USED% | used=$PERCENT_USED%  QuotaUsage=${USED_T}  QuotaTotal=${QUOTA_T}  QuotaFree=${FREE_T}"
      exit 1
    else
-     echo "OK - Used = ${USED_GB}G, Quota = ${QUOTA_GB}G, Free = ${FREE_GB}G, used = $PERCENT_USED% | used=$PERCENT_USED QuotaUsage=${USED_GB} ; QuotaTotal=${QUOTA_GB} ; QuotaFree=${FREE_GB}"
+     echo "OK - Used = ${USED_GB}G, Quota = ${QUOTA_GB}G, Free = ${FREE_GB}G, used = $PERCENT_USED% | used=$PERCENT_USED%  QuotaUsage=${USED_T}  QuotaTotal=${QUOTA_T}  QuotaFree=${FREE_T}"
      exit 0
   fi
 fi
