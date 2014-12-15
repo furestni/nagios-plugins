@@ -5,22 +5,24 @@ warninglevel=95
 criticallevel=98
 
 #config file
-isiloncfgpath=/etc/icinga/isilon/
+isiloncfgpath=/etc/icinga/dynamic/
 
 #ExcludeFilter
 excludefilter=''
 
 
-for hostname in Isilon-ix-SmartConnect Isilon-cu01-SmartConnect
+for hostname in Isilon-ix-SmartConnect.stxt.media.int Isilon-cu01-SmartConnect.stxt.media.int
 do
-
 
 if [ ! -s $config_file ]
 then
-   echo "" >  $config_file
+   echo -e "object Host $hostname { 
+   import \"generic-host-pnp\"
+   address == $hostname " >  $config_file
+   }
 fi
 
-if [ $hostname == "Isilon-ix-SmartConnect" ]
+if [ $hostname == "Isilon-ix-SmartConnect.stxt.media.int" ]
 then
   servicelist=$( ssh root@isilon-ix-smartconnect.stxt.media.int -C "isi quota ls" | awk '$5 ~ "[[:digit:]]" { print $3 }'  )
 else
@@ -34,13 +36,10 @@ fi
 
 for y in $servicelist
 do 
-   echo -e "define service {
-   host_name \t\t $hostname
-   service_description \t isilon_share $y
-   display_name \t isilon_share $y
-   use \t\t\t Generic-Service,service-pnp
+   echo -e "apply service "Isilon_share $y{
+   import \"generic-service\"
+   vars.sla = \"24x7\"
    check_command \t check_by_ssh! -l root -t 30 -C \"/bin/bash /ifs/data/nagios/isilon-quota-usage.sh -p $y -w $warninglevel -c $criticallevel\"
-   register \t\t 1
     }" >> $isiloncfgpath/$hostname.cfg
    done
 done
