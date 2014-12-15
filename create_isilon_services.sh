@@ -16,10 +16,11 @@ do
 
 if [ ! -s $config_file ]
 then
-   echo -e "object Host $hostname { 
-   import \"generic-host-pnp\"
-   address == $hostname " >  $config_file
-   }
+   echo -e "object Host \"$hostname\" { 
+   import \"generic-host\"
+   address == \"$hostname\"
+   } " >  $config_file
+   
 fi
 
 if [ $hostname == "Isilon-ix-SmartConnect.stxt.media.int" ]
@@ -36,11 +37,11 @@ fi
 
 for y in $servicelist
 do 
-   echo -e "apply service "Isilon_share $y{
-   import \"generic-service\"
+   echo -e "apply service \"Isilon_share $y\"{
+   import \"generic-service-pnp\"
    vars.sla = \"24x7\"
    check_command \t check_by_ssh! -l root -t 30 -C \"/bin/bash /ifs/data/nagios/isilon-quota-usage.sh -p $y -w $warninglevel -c $criticallevel\"
-    }" >> $isiloncfgpath/$hostname.cfg
+    } " >> $isiloncfgpath/$hostname.cfg
    done
 done
 
