@@ -26,7 +26,7 @@ if [ ! -s $cfgfile ]
 then
    echo -e "object Host \"$hostname\" { 
    import \"generic-host\"
-   address == \"$hostname\"
+   address = \"$hostname\"
    } " >  $cfgfile
 
 fi
@@ -41,8 +41,13 @@ do
    echo -e "apply service \"Isilon_share $y\"{
    import \"generic-service-pnp\"
    vars.sla = \"24x7\"
-   check_command \t check_by_ssh! -l root -t 30 -C \"/bin/bash /ifs/data/nagios/isilon-quota-usage.sh -p $y -w $warninglevel -c $criticallevel\"
-    } " >> $cfgfile
+
+   check_command \t check_by_ssh
+   
+   vars.user = \"root\" 
+   vars.timeout = \"30\"
+   vars.command = \"/bin/bash /ifs/data/nagios/isilon-quota-usage.sh -p $y -w $warninglevel -c $criticallevel\"
+    } \n " >> $cfgfile
    done
 done
 
