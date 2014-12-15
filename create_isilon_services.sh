@@ -1,13 +1,11 @@
 #!/bin/bash
 
-#Warning Levels
+#Define Check Levels
 warninglevel=95
 criticallevel=98
 
-
-#ExcludeFilter
+#ExcludeFilter , need to be implemented
 excludefilter=''
-
 
 for hostname in Isilon-ix-SmartConnect.stxt.media.int Isilon-cu01-SmartConnect.stxt.media.int
 do
@@ -22,33 +20,42 @@ else
 fi
 
 
-if [ ! -s $cfgfile ]
-then
-   echo -e "object Host \"$hostname\" { 
-   import \"generic-host\"
-   address = \"$hostname\"
-   } " >  $cfgfile
-
-fi
-
 if [[ ! -z $servicelist ]]
 then
-   echo "" >  $isiloncfgpath/$hostname.cfg
+   # Write host definition for Smart Connect
+  echo -e "object Host \"$hostname\" { 
+  import \"generic-host\"
+  address = \"$hostname\"
+  } " >  $cfgfile.tmp
+  
+  # Write Services for Smart Connect Host
+  for y in $servicelist
+  do 
+     echo -e "apply service \"Isilon_share $y\"{
+     import \"generic-service-pnp\"
+     vars.sla = \"24x7\"
+
+     check_command  = \"check_by_ssh\"
+     
+     vars.user = \"root\" 
+     vars.timeout = \"30\"
+     vars.command = \"/bin/bash /ifs/data/nagios/isilon-quota-usage.sh -p $y -w $warninglevel -c $criticallevel\"
+      } \n " >> $cfgfile.tmp
+   done
+   
+   # Check if modification
+   diff -r cfgfile cfgfile.tmp > /dev/null 2>&1
+   if [ $? -eq 1 ]
+     then
+     echo "Config Changed, updating now"
+     cp $cfg.tmp $cfg
+     echo "new or modified isilon shares, reload icinga"
+     cp -rp /var/icinga/core/dynamic_hosts /etc/icinga/
+  else
+      echo "no isilon shares modifications, nothing to do"
+  fi
+  
+done
 fi
 
-for y in $servicelist
-do 
-   echo -e "apply service \"Isilon_share $y\"{
-   import \"generic-service-pnp\"
-   vars.sla = \"24x7\"
-
-   check_command \t check_by_ssh
-   
-   vars.user = \"root\" 
-   vars.timeout = \"30\"
-   vars.command = \"/bin/bash /ifs/data/nagios/isilon-quota-usage.sh -p $y -w $warninglevel -c $criticallevel\"
-    } \n " >> $cfgfile
-   done
-done
-
-chown icinga.icinga $isiloncfgpath
+#chown icinga.icinga $isiloncfgpath
