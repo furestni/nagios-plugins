@@ -38,6 +38,7 @@ do
        vars.user = \"root\" 
        vars.timeout = \"30\"
        vars.option = \"StrictHostKeyChecking=no\"
+       vars.option2 = \"UserKnownHostsFile=/dev/null\"
        vars.command = \"/bin/bash /ifs/data/nagios/isilon-quota-usage.sh -p $y -w $warninglevel -c $criticallevel\"
         } \n " >> $cfgfile.tmp
     done
