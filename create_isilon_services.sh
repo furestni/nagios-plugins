@@ -12,10 +12,10 @@ do
   if [ $hostname == "Isilon-ix-SmartConnect.stxt.media.int" ]
   then
     servicelist=$( ssh root@isilon-ix-smartconnect.stxt.media.int -C "isi quota ls" | awk '$5 ~ "[[:digit:]]" { print $3 }'  )
-    cfgfile="/etc/icinga2/zones.d/datacenter-ix/isilonshare.conf"
+    cfgfile="/etc/icinga2/zones.d/zone-ix/isilonshare.conf"
   else
     servicelist=$( ssh root@isilon-cu01-smartconnect.stxt.media.int -C "isi quota ls" | awk '$5 ~ "[[:digit:]]" { print $3 }' )
-    cfgfile="/etc/icinga2/zones.d/datacenter-bie/isilonshare.conf"
+    cfgfile="/etc/icinga2/zones.d/zone-bie/isilonshare.conf"
   fi
 
   if [[ ! -z $servicelist ]]
@@ -37,8 +37,7 @@ do
        
        vars.user = \"root\" 
        vars.timeout = \"30\"
-       vars.option = \"StrictHostKeyChecking=no\"
-       vars.option2 = \"UserKnownHostsFile=/dev/null\"
+       vars.option = [ \"UserKnownHostsFile=/dev/null\", \"StrictHostKeyChecking=no\" ]
        vars.command = \"/bin/bash /ifs/data/nagios/isilon-quota-usage.sh -p $y -w $warninglevel -c $criticallevel\"
        assign where host.address == \"$hostname\"
         } \n " >> $cfgfile.tmp
