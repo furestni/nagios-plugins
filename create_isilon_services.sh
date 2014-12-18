@@ -12,10 +12,10 @@ do
   if [ $hostname == "Isilon-ix-SmartConnect.stxt.media.int" ]
   then
     servicelist=$( ssh root@isilon-ix-smartconnect.stxt.media.int -C "isi quota ls" | awk '$5 ~ "[[:digit:]]" { print $3 }'  )
-    cfgfile="/etc/icinga2/zones.d/datacenter-ix/isilonshare.cfg"
+    cfgfile="/etc/icinga2/zones.d/datacenter-ix/isilonshare.conf"
   else
     servicelist=$( ssh root@isilon-cu01-smartconnect.stxt.media.int -C "isi quota ls" | awk '$5 ~ "[[:digit:]]" { print $3 }' )
-    cfgfile="/etc/icinga2/zones.d/datacenter-bie/isilonshare.cfg"
+    cfgfile="/etc/icinga2/zones.d/datacenter-bie/isilonshare.conf"
   fi
 
   if [[ ! -z $servicelist ]]
@@ -29,7 +29,7 @@ do
     # Write Services for Smart Connect Host
     for y in $servicelist
     do 
-       echo -e "apply service \"Isilon_share $y\"{
+       echo -e "apply Service \"Isilon_share $y\"{
        import \"generic-service-pnp\"
        vars.sla = \"24x7\"
 
@@ -40,11 +40,12 @@ do
        vars.option = \"StrictHostKeyChecking=no\"
        vars.option2 = \"UserKnownHostsFile=/dev/null\"
        vars.command = \"/bin/bash /ifs/data/nagios/isilon-quota-usage.sh -p $y -w $warninglevel -c $criticallevel\"
+       assign where host.address == \"$hostname\"
         } \n " >> $cfgfile.tmp
     done
      
      # Check if modification
-    diff cfgfile cfgfile.tmp > /dev/null 2>&1
+    diff $cfgfile $cfgfile.tmp > /dev/null 2>&1
     if [ $? -eq 1 ]
     then
       echo "Config Changed, updating now"
