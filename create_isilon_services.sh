@@ -11,10 +11,10 @@ for hostname in Isilon-ix-SmartConnect.stxt.media.int Isilon-cu01-SmartConnect.s
 do
   if [ $hostname == "Isilon-ix-SmartConnect.stxt.media.int" ]
   then
-    servicelist=$( ssh root@isilon-ix-smartconnect.stxt.media.int -C "isi quota ls" | awk '$5 ~ "[[:digit:]]" { print $3 }'  )
+    servicelist=$( ssh root@isilon-ix-smartconnect.stxt.media.int -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q -C "isi quota ls" | awk '$5 ~ "[[:digit:]]" { print $3 }'  )
     cfgfile="/etc/icinga2/zones.d/zone-ix/isilonshare.conf"
   else
-    servicelist=$( ssh root@isilon-cu01-smartconnect.stxt.media.int -C "isi quota ls" | awk '$5 ~ "[[:digit:]]" { print $3 }' )
+    servicelist=$( ssh root@isilon-cu01-smartconnect.stxt.media.int -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q -C "isi quota ls" | awk '$5 ~ "[[:digit:]]" { print $3 }' )
     cfgfile="/etc/icinga2/zones.d/zone-bie/isilonshare.conf"
   fi
 
@@ -43,12 +43,19 @@ do
         } \n " >> $cfgfile.tmp
     done
      
+    # check if file exists
+    if [ ! -e $cfgfile ]
+    then
+      touch $cfgfile
+    fi
+
      # Check if modification
-    diff $cfgfile $cfgfile.tmp > /dev/null 2>&1
+    cmp $cfgfile $cfgfile.tmp
     if [ $? -eq 1 ]
     then
       echo "Config Changed, updating now"
       cp $cfgfile.tmp $cfgfile
+      service icinga2 reload
     else
       echo "no isilon shares modifications, nothing to do"
     fi
