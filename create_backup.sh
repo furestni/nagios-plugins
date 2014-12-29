@@ -45,7 +45,7 @@ do
   esac
 done
 
-destfilename="$path/$host/config_$(date +%Y%m%d-%H%M%S).cfg"
+destfilename="$path/config_$(date +%Y%m%d-%H%M%S).cfg"
 
 # save backup on icinga2Core
 ssh root@$icinga2core $sshoptions << EOF | > /dev/null 2>&1
