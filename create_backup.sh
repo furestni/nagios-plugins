@@ -1,6 +1,8 @@
 #!/bin/bash
+# Backup of Fortigate
 
-# Argument Parsing
+icinga2core=icinga2core.stxt.media.int
+
 function usage {
    echo "usage:"
    echo "-H Fortigate Host"
@@ -11,7 +13,7 @@ function usage {
 }
 
 # Catch Arguments
-while getopts ":H:i:p:u" optname
+while getopts ":H:i:p:u:" optname
 do
   case "$optname" in
     "H")
@@ -19,6 +21,7 @@ do
       ;;
     "i")
       key=$OPTARG
+      ;;
     "p")
       path=$OPTARG
       ;;
@@ -41,11 +44,23 @@ do
   esac
 done
 
+destfilename="$path/$host/config_$(date +%Y%m%d-%H%M%S).cfg"
 
-if [ ! -e $path ]
+# save backup on icinga2Core
+ssh root@$icinga2core -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no << EOF
+if [ ! -d $path/$host ]
 then
-  mkdir $path
+  mkdir -p $path/$host
 fi
+scp -i $key -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $user@$host:sys_config $destfilename
+EOF
 
-/usr/bin/scp -i $key -B -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $user@$host:sys_config $path/$host/date +%Y-%m-%d:%H:%M:%S.cfg
-
+#Check if file written and not empty
+if ssh root@$icinga2core test -e $destfilename;
+then 
+  echo OK - Last Backup performed at $(date +%Y-%m-%d-%H:%M:%S)
+  exit 0
+else 
+  echo Error - Backup Job failed at $(date +%Y-%m-%d-%H:%M:%S)
+  exit 2
+fi
