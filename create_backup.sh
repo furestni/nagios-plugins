@@ -49,9 +49,9 @@ destfilename="$path/config_$(date +%Y%m%d-%H%M%S).cfg"
 
 # save backup on icinga2Core
 ssh root@$icinga2core $sshoptions << EOF | > /dev/null 2>&1
-if [ ! -d $path/$host ]
+if [ ! -d $path ]
 then
-  mkdir -p $path/$host
+  mkdir -p $path
 fi
 scp -i $key $sshoptions $user@$host:sys_config $destfilename 
 EOF
