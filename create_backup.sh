@@ -47,16 +47,16 @@ done
 destfilename="$path/$host/config_$(date +%Y%m%d-%H%M%S).cfg"
 
 # save backup on icinga2Core
-ssh root@$icinga2core -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no << EOF
+ssh root@$icinga2core -q -o UserKnownHostsFile=/dev/null -o LogLevel=Error -o BatchMode=yes -o StrictHostKeyChecking=no << EOF | > /dev/null 2>&1
 if [ ! -d $path/$host ]
 then
   mkdir -p $path/$host
 fi
-scp -i $key -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $user@$host:sys_config $destfilename
+scp -i $key -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $user@$host:sys_config $destfilename 
 EOF
 
 #Check if file written and not empty
-if ssh root@$icinga2core test -e $destfilename;
+if ssh -q root@$icinga2core test -e $destfilename;
 then 
   echo OK - Last Backup performed at $(date +%Y-%m-%d-%H:%M:%S)
   exit 0
