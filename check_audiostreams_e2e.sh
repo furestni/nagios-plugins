@@ -11,7 +11,7 @@ while getopts ":t:" optname
 do
   case "$optname" in
     "t")
-      host=$OPTARG
+      type=$OPTARG
       ;;
     "?")
       echo "Unknown option $OPTARG"
@@ -37,7 +37,7 @@ unkncount=0
 pluginpath="/usr/lib64/nagios/plugins"
 
 #Streams for icecast
-if [ "$1" == "icecast" ]; then
+if [ "$type" == "icecast" ]; then
    stream_list="\
   /m/couleur3/aacp_32 \
   /m/couleur3/aacp_96 \
@@ -128,7 +128,7 @@ if [ "$1" == "icecast" ]; then
   /m/rts_event/mp3_128"
   command="$pluginpath/check_ice -p 80 -H streaming.swisstxt.ch -p 80 -m"
  
-elif [ "$1" == "wowza" ]; then
+elif [ "$type" == "wowza" ]; then
    stream_list="\
    /live/drs2.32.stream \
    /live/drs2.96.stream \
