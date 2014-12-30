@@ -2,10 +2,9 @@
 
 use strict;
 use Getopt::Long;
-use utils qw($TIMEOUT %ERRORS &print_revision &support);
 use lib "/usr/lib/nagios/plugins";
 use lib "/usr/local/nagios/libexec";
-
+use utils qw($TIMEOUT %ERRORS &print_revision &support);
 
 my $stream = "/m/drs1/aacp_96";
 my $uptime = '0 days';
