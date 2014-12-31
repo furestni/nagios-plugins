@@ -62,12 +62,12 @@ sum=$((okcount + errorcount))
 ratio=$( echo "$okcount*100/$sum"|bc )
 
 if [ "$ratio" -lt "$critical" ]; then
-   echo "Critical - $ratio Servers are Online, $errorcount of $sum  Servers are Offline"
+   echo "Critical - $ratio% Servers are Online, $errorcount of $sum  Servers are Offline | avail=$ratio%"
    exit 2
 elif [ "$ratio" -lt "$warning" ]; then
-   echo "Warning - $ratio Servers are Online, $errorcount of $sum Servers are Offline"
+   echo "Warning - $ratio% Servers are Online, $errorcount of $sum Servers are Offline | avail=$ratio%"
    exit 1
 else
-   echo "OK - $ratio Servers are Online, $errorcount of $sum Servers are Offline"
+   echo "OK - $ratio% Servers are Online, $errorcount of $sum Servers are Offline | avail=$ratio%"
    exit 0
 fi
