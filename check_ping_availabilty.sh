@@ -1,11 +1,16 @@
 #!/bin/bash
 
+okcount=0
+errorcount=0
+warning=70
+critical=80
+
 function usage {
    echo "usage:"
    echo "Checks if hosts are reachable"
    echo "-H List of Hosts, comma seperated"
-   echo "-w Warning Level in %"
-   echo "-c Critical Level in %"
+   echo "-w Warning Level in %, default is 70% up"
+   echo "-c Critical Level in %, default is 80% up"
    echo "-p Path; where to save backups"
    exit 3
 }
@@ -45,9 +50,6 @@ do
   esac
 done
 
-okcount=0
-errorcount=0
-
 for i in ${host//,/ } ; do 
   if ping -c 1 -W 3 $i 2>&1 >/dev/null ; then
     okcount=$((okcount+1))
@@ -56,10 +58,16 @@ for i in ${host//,/ } ; do
   fi
 done
 
-if [ "$errorcount" -gt "0" ]; then
-   echo "Failed - $okcount Servers are Online, $errorcount Servers are Offline"
+sum=$((okcount + errorcount))
+ratio=$( echo "$okcount*100/$sum"|bc )
+
+if [ "$ratio" -lt "$critical" ]; then
+   echo "Critical - $ratio Servers are Online, $errorcount of $sum  Servers are Offline"
    exit 2
+elif [ "$ratio" -lt "$warning" ]; then
+   echo "Warning - $ratio Servers are Online, $errorcount of $sum Servers are Offline"
+   exit 1
 else
-   echo "OK - $okcount Servers are Online, $errorcount Servers are Offline"
+   echo "OK - $ratio Servers are Online, $errorcount of $sum Servers are Offline"
    exit 0
 fi
