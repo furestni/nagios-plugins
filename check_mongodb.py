@@ -16,6 +16,8 @@
 #   - @jbraeuer on github
 #   - Dag Stockstad <dag.stockstad@gmail.com>
 #   - @Andor on github
+#   - Steven Richards - Captainkrtek on github
+#   - Max Vernimmen
 #
 # USAGE
 #
@@ -69,9 +71,9 @@ def performance_data(perf_data, params):
                 warning = warning or 0
                 critical = critical or 0
                 data += ";%s;%s" % (warning, critical)
-                
+
             data += " "
-            
+
     return data
 
 
@@ -130,9 +132,9 @@ def main(argv):
     p.add_option('-C', '--critical', action='store', dest='critical', default=None, help='The critical threshold we want to set')
     p.add_option('-A', '--action', action='store', type='choice', dest='action', default='connect', help='The action you want to take',
                  choices=['connect', 'connections', 'replication_lag', 'replication_lag_percent', 'replset_state', 'memory', 'memory_mapped', 'lock',
-                          'flushing', 'last_flush_time', 'index_miss_ratio', 'databases', 'collections', 'database_size', 'database_indexes', 'collection_indexes',
+                          'flushing', 'last_flush_time', 'index_miss_ratio', 'databases', 'collections', 'database_size', 'database_indexes', 'collection_indexes', 'collection_size',
                           'queues', 'oplog', 'journal_commits_in_wl', 'write_data_files', 'journaled', 'opcounters', 'current_lock', 'replica_primary', 'page_faults',
-                          'asserts', 'queries_per_second', 'page_faults', 'chunks_balance', 'connect_primary', 'collection_state', 'row_count'])
+                          'asserts', 'queries_per_second', 'page_faults', 'chunks_balance', 'connect_primary', 'collection_state', 'row_count', 'replset_quorum'])
     p.add_option('--max-lag', action='store_true', dest='max_lag', default=False, help='Get max replication lag (for replication_lag action only)')
     p.add_option('--mapped-memory', action='store_true', dest='mapped_memory', default=False, help='Get mapped memory instead of resident (if resident memory can not be read)')
     p.add_option('-D', '--perf-data', action='store_true', dest='perf_data', default=False, help='Enable output of Nagios performance data')
@@ -223,6 +225,8 @@ def main(argv):
         return check_database_indexes(con, database, warning, critical, perf_data)
     elif action == "collection_indexes":
         return check_collection_indexes(con, database, collection, warning, critical, perf_data)
+    elif action == "collection_size":
+        return check_collection_size(con, database, collection, warning, critical, perf_data)
     elif action == "journaled":
         return check_journaled(con, warning, critical, perf_data)
     elif action == "write_data_files":
@@ -245,6 +249,8 @@ def main(argv):
         return check_collection_state(con, database, collection)
     elif action == "row_count":
         return check_row_count(con, database, collection, warning, critical, perf_data)
+    elif action == "replset_quorum":
+        return check_replset_quorum(con, perf_data)
     else:
         return check_connect(host, port, warning, critical, perf_data, user, passwd, conn_time)
 
@@ -497,8 +503,22 @@ def check_memory(con, warning, critical, perf_data, mapped_memory):
     #
     # These thresholds are basically meaningless, and must be customized to your system's ram
     #
-    warning = warning or 8
-    critical = critical or 16
+
+    # Get the total system merory and calculate based on that how much memory used by Mongodb is ok or not.
+    meminfo = open('/proc/meminfo').read()
+    matched = re.search(r'^MemTotal:\s+(\d+)', meminfo)
+    if matched: 
+        mem_total_kB = int(matched.groups()[0])
+
+    # Old way
+    #critical = critical or 16
+    # The new way. if using >80% then warn, if >90% then critical level
+    warning = warning or (mem_total_kB * 0.8) / 1024.0 / 1024.0
+    critical = critical or (mem_total_kB * 0.9) / 1024.0 / 1024.0
+
+    # debugging
+    #print "mem total: {0}kb, warn: {1}GB, crit: {2}GB".format(mem_total_kB,warning, critical)
+
     try:
         data = get_server_status(con)
         if not data['mem']['supported'] and not mapped_memory:
@@ -589,7 +609,12 @@ def check_lock(con, warning, critical, perf_data):
         #
         # calculate percentage
         #
-        lock_percentage = float(data['globalLock']['lockTime']) / float(data['globalLock']['totalTime']) * 100
+        lockTime = data['globalLock']['lockTime']
+        totalTime = data['globalLock']['totalTime']
+        if lockTime > totalTime:
+            lock_percentage = 0.00
+        else:
+            lock_percentage = float(lockTime) / float(totalTime) * 100
         message = "Lock Percentage: %.2f%%" % lock_percentage
         message += performance_data(perf_data, [("%.2f" % lock_percentage, "lock_percentage", warning, critical)])
         return check_levels(lock_percentage, warning, critical, message)
@@ -651,6 +676,31 @@ def index_miss_ratio(con, warning, critical, perf_data):
 
     except Exception, e:
         return exit_with_general_critical(e)
+
+def check_replset_quorum(con, perf_data):
+    db = con['admin']
+    warning = 1
+    critical = 2
+    primary = 0
+
+    try:
+        rs_members = db.command("replSetGetStatus")['members']
+
+        for member in rs_members:
+            if member['state'] == 1:
+                primary += 1
+
+        if primary == 1:
+            state = 0
+            message = "Cluster is quorate"
+        else:
+            state = 2
+            message = "Cluster is not quorate and cannot operate"
+
+        return check_levels(state, warning, critical, message)
+    except Exception, e:
+        return exit_with_general_critical(e)
+
 
 
 def check_replset_state(con, perf_data, warning="", critical=""):
@@ -861,6 +911,28 @@ def check_queues(con, warning, critical, perf_data):
     except Exception, e:
         return exit_with_general_critical(e)
 
+def check_collection_size(con, database, collection, warning, critical, perf_data):
+    warning = warning or 100
+    critical = critical or 1000
+    perfdata = ""
+    try:
+        set_read_preference(con.admin)
+        data = con[database].command('collstats', collection)
+        size = data['size'] / 1024 / 1024
+        if perf_data:
+            perfdata += " | collection_size=%i;%i;%i" % (size, warning, critical)
+
+        if size >= critical:
+            print "CRITICAL - %s.%s size: %.0f MB %s" % (database, collection, size, perfdata)
+            return 2
+        elif size >= warning:
+            print "WARNING - %s.%s size: %.0f MB %s" % (database, collection, size, perfdata)
+            return 1
+        else:
+            print "OK - %s.%s size: %.0f MB %s" % (database, collection, size, perfdata)
+            return 0
+    except Exception, e:
+        return exit_with_general_critical(e)
 
 def check_queries_per_second(con, query_type, warning, critical, perf_data):
     warning = warning or 250
