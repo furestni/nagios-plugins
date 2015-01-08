@@ -108,7 +108,7 @@ Note: None of the Perl modules mentioned as \"may be too old\" are needed for ch
 sub main {
 	$PROGNAME = basename($0);
 	$VERSION = '0.7.1';
-
+	$ENV{'PERL_LWP_SSL_VERIFY_HOSTNAME'} = 0;
 	my $np = Nagios::Plugin->new(
 		usage => "Usage: %s -D <data_center> | -H <host_name> [ -C <cluster_name> ] [ -N <vm_name> ]\n"
 		. "    -u <user> -p <pass> | -f <authfile>\n"
