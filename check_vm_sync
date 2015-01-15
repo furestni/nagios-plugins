@@ -1,0 +1,141 @@
+#!/usr/bin/python
+import atexit
+import argparse
+import sys
+import getpass
+
+try:
+    from tabulate import tabulate
+    from pyVim import connect
+    from pyVmomi import vim, vmodl
+    from cs import CloudStack, CloudStackException, read_config
+except ImportError:
+    print 'python library required: cs, tabulate, pyvmomi'
+    print 'pip install <library>'
+    sys.exit(1)
+
+
+def get_args():
+    """
+    Supports the command-line arguments listed below.
+    """
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('-s', '--host', required=True, action='store', help='Remote host to connect to')
+    parser.add_argument('-o', '--port', type=int, default=443, action='store', help='Port to connect on')
+    parser.add_argument('-u', '--user', required=True, action='store', help='User name to use when connecting to host')
+    parser.add_argument('-p', '--password', required=False, action='store', help='Password to use when connecting to host')
+    parser.add_argument('-v', '--verbose', action="store_true", help="increase output verbosity")
+    args = parser.parse_args()
+    if not args.password:
+        args.password = getpass.getpass(
+            prompt='Enter password for host %s and user %s: ' % (args.host, args.user))
+    return args
+
+
+def get_stopped_vms(cs, project):
+    vms = cs.listVirtualMachines(projectid=project['id'])
+    vms_stopped = {}
+    for vm in vms['virtualmachine']:
+        if 'state' in vm and vm['state'] == 'Stopped':
+            vm['project'] = project['name']
+            vms_stopped[vm['instancename']] = vm
+    return vms_stopped
+
+
+def get_vms(cs, project):
+    vms = cs.listVirtualMachines(projectid=project['id'])
+    result = {}
+    for vm in vms['virtualmachine']:
+        vm['project'] = project['name']
+        result[vm['instancename']] = vm
+    return result
+
+
+def get_projects(cs):
+    projects = cs.listProjects(listall='true', isrecursive='true')
+    if projects:
+        return projects['project']
+    return {}
+
+
+def vsphere_vm_list(args):
+    si = connect.SmartConnect(host=args.host,
+        user=args.user,
+        pwd=args.password,
+        port=int(args.port))
+
+    atexit.register(connect.Disconnect,si)
+
+    content = si.content
+    objView = content.viewManager.CreateContainerView(
+        content.rootFolder,
+        [vim.VirtualMachine],
+        True)
+    vmList = objView.view
+    return (vmList, objView)
+
+
+def main():
+    try:
+        args = get_args()
+        cs = CloudStack(**read_config())
+        projects = get_projects(cs)
+
+        (vmList, objView) = vsphere_vm_list(args)
+
+        instance_names = []
+        instance_results = {}
+        for project in projects:
+            results = get_vms(cs, project)
+            for instance_name, vm in results.iteritems():
+                instance_names.append(instance_name)
+                instance_results[instance_name] = vm
+
+        vms = []
+        return_code = 0
+        for vm in vmList:
+            if vm.name in instance_names:
+                if vm.summary.runtime.powerState == "poweredOn" and instance_results[vm.name]['state'] == 'Stopped':
+                    return_code = 2
+                    vms.append([
+                        instance_results[vm.name]['name'],
+                        vm.name,
+                        instance_results[vm.name]['state'],
+                        vm.summary.runtime.powerState,
+                        instance_results[vm.name]['project'],
+                        ])
+                elif vm.summary.runtime.powerState == "poweredOff" and instance_results[vm.name]['state'] == 'Running':
+                    return_code = 2
+                    vms.append([
+                        instance_results[vm.name]['name'],
+                        vm.name,
+                        instance_results[vm.name]['state'],
+                        vm.summary.runtime.powerState,
+                        instance_results[vm.name]['project'],
+                        ])
+        objView.Destroy()
+
+        if args.verbose:
+            headers=["VM", "Instance Name", "Cloudstack State", "vSphere State", "Project"]
+            print tabulate(vms, tablefmt="table", headers=headers)
+            sys.exit(return_code)
+        else:
+            number = len(vms)
+            if number > 0:
+                instance_names = [ i[0] + ' > ' + i[4] for i in vms ]
+                msg = ', '.join(instance_names)
+                print "WARNING - %d VMs out of sync: %s" % (number, msg)
+                sys.exit(1)
+            else:
+                print "OK - VMs in of sync"
+                sys.exit(0)
+
+    except CloudStackException, e:
+        print "CloudStackException: %s" % str(e)
+        sys.exit(1)
+    except vmodl.MethodFault as error:
+        print "Caught vmodl fault : " + error.msg
+        sys.exit(1)
+# Start program
+if __name__ == "__main__":
+    main()
