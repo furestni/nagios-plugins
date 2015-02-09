@@ -24,6 +24,9 @@ def get_args():
     parser.add_argument('-o', '--port', type=int, default=443, action='store', help='Port to connect on')
     parser.add_argument('-u', '--user', required=True, action='store', help='User name to use when connecting to host')
     parser.add_argument('-p', '--password', required=False, action='store', help='Password to use when connecting to host')
+    parser.add_argument('-k', '--key', action="store", help="cloudstack api key")
+    parser.add_argument('-t', '--secret', action="store", help="cloudstack api secret")
+    parser.add_argument('-l', '--url', action="store", help="cloudstack api url")
     parser.add_argument('-v', '--verbose', action="store_true", help="increase output verbosity")
     args = parser.parse_args()
     if not args.password:
@@ -78,7 +81,15 @@ def vsphere_vm_list(args):
 def main():
     try:
         args = get_args()
-        cs = CloudStack(**read_config())
+        if args.key and args.secret and args.url:
+            cs = CloudStack(
+                    endpoint=args.url,
+                    key=args.key,
+                    secret=args.secret,
+                )
+        else:
+            cs = CloudStack(**read_config())
+
         projects = get_projects(cs)
 
         (vmList, objView) = vsphere_vm_list(args)
