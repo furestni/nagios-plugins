@@ -186,7 +186,7 @@ elif [ "$type" == "wowza" ]; then
    /live/rsi_event.96.stream \
    /live/rr_event.32.stream \
    /live/rr_event.96.stream"
-   command="$pluginpath/check_rtmp_stream.sh rtmp.streaming.swisstxt.ch "
+   command="$pluginpath/check_rtmp_stream.sh -H rtmp.streaming.swisstxt.ch -p"
 fi
 
 #Perform the check for each stream
