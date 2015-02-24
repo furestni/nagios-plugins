@@ -4,7 +4,6 @@ import os
 import sys
 import json
 import urllib2
-from pprint import pprint
 from optparse import OptionParser
 
 __program__ = "check_jenkins_view"
