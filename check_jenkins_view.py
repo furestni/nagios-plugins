@@ -23,7 +23,7 @@ def version():
 def getopts():
   program = os.path.basename(sys.argv[0])
 
-  usg = "{0} -h | -b | -v | -a".format(program)
+  usg = "{0} -h | -b | -v | -c | -w".format(program)
   parser = OptionParser(usage=usg)
 
   parser.add_option("-b", "--baseurl", dest="baseurl",
@@ -34,32 +34,40 @@ def getopts():
                     action="store", type="string",
                     help="the view you want to monitor",
                     metavar="VIEW")
-  parser.add_option("-a", "--alarm", dest="alarmstates",
-                    default="red,yellow", action="store", type="string",
-                    help="a comma-separated list of build colors that should be alarmed",
-                    metavar="ALARM")
+  parser.add_option("-c", "--critical", dest="critical",
+                    default="", action="store", type="string",
+                    help="a comma-separated list of build colors that should be alarmed as critical",
+                    metavar="CRITCAL")
+  parser.add_option("-w", "--warn", dest="warn",
+                    default="", action="store", type="string",
+                    help="a comma-separated list of build colors that should be alarmed as warning",
+                    metavar="WARN")
   return parser
 
 ######################################################################
-# fetch jobs from view
+# fetch view
 ######################################################################
-def checkview(baseurl, view, alarm):
+def fetchview(baseurl, view):
+    try:
+        url = baseurl + "/view/" + view + "/api/json"
+        response = urllib2.urlopen(url).read()
+        data = json.loads(response)
+    except Exception:
+        import traceback
+        sys.stdout.write('ERROR: API could not be queried')
+        sys.exit(3)
+    return data
+
+######################################################################
+# check view
+######################################################################
+def checkview(view, alarm):
     alarmstates = alarm.split(",")
     if "green" in alarmstates:
         alarmstates.append("blue")
 
-    try:
-        url = baseurl + "/view/" + view + "/api/json"
-    except Exception:
-        import traceback
-        sys.stdout.write('ERROR: API could not be queried\n')
-        sys.exit(3)
-
-    response = urllib2.urlopen(url).read()
-    data = json.loads(response)
-
     failed = []
-    for job in data["jobs"]:
+    for job in view["jobs"]:
         for state in alarmstates:
             if job["color"] == state:
                 failed.append(job["name"])
@@ -73,15 +81,29 @@ def main():
     parser = getopts()
     (options, args) = parser.parse_args()
 
-    failed = checkview(options.baseurl, options.view, options.alarmstates)
+    viewdata = fetchview(options.baseurl, options.view)
 
-    if len(failed) > 0:
-        joblist = ', '.join(str(job) for job in failed)
-        sys.stdout.write("These jobs do not match the required state: {0}\n".format(joblist))
-        sys.exit(2)
-    else:
-        sys.stdout.write("All jobs match the required state\n")
-        sys.exit(0)
+    critical = checkview(viewdata, options.critical)
+    warn = checkview(viewdata, options.warn)
+
+    exitcode = 0
+    out = []
+
+    if len(warn) > 0:
+        jobs = ', '.join(str(job) for job in warn)
+        out.append("These jobs are in a WARN state: {0}".format(jobs))
+        exitcode = 1
+
+    if len(critical) > 0:
+        jobs = ', '.join(str(job) for job in critical)
+        out.append("These jobs are in a CRITICAL state: {0}".format(jobs))
+        exitcode = 2
+
+    if exitcode == 0:
+        out = ["All jobs match the required state"]
+
+    sys.stdout.write(' / '.join(str(job) for job in out))
+    sys.exit(exitcode)
 
 if __name__ == "__main__":
     main()
