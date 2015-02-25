@@ -69,7 +69,8 @@ def checkview(view, alarm):
     for job in view["jobs"]:
         for state in alarmstates:
             if job["color"] == state:
-                failed.append(job["name"])
+                link = "<a href=\"{0}\">{1}</a>".format(job["url"], job["name"])
+                failed.append(link)
 
     return failed
 
@@ -90,18 +91,18 @@ def main():
 
     if len(warn) > 0:
         jobs = ', '.join(str(job) for job in warn)
-        out.append("These jobs are in a WARN state: {0}".format(jobs))
+        out.append("<p style=\"color:orange\">These jobs are in a WARN state: {0}</p>".format(jobs))
         exitcode = 1
 
     if len(critical) > 0:
         jobs = ', '.join(str(job) for job in critical)
-        out.append("These jobs are in a CRITICAL state: {0}".format(jobs))
+        out.append("<p style=\"color:red\">These jobs are in a CRITICAL state: {0}</p>".format(jobs))
         exitcode = 2
 
     if exitcode == 0:
         out = ["All jobs match the required state"]
 
-    sys.stdout.write(' / '.join(str(job) for job in out))
+    sys.stdout.write('<hr>'.join(str(job) for job in out))
     sys.exit(exitcode)
 
 if __name__ == "__main__":
