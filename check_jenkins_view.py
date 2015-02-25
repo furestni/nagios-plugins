@@ -69,7 +69,7 @@ def checkview(view, alarm):
     for job in view["jobs"]:
         for state in alarmstates:
             if job["color"] == state:
-                link = "<a href=\"{0}\" target=\"_blank\">{1}</a>".format(job["url"], job["name"])
+                link = "<a href=\"{0}\" target=\"_blank\">{1}</a> is {2}".format(job["url"], job["name"], state)
                 failed.append(link)
 
     return failed
