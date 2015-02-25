@@ -96,13 +96,13 @@ def main():
 
     if len(critical) > 0:
         jobs = ', '.join(str(job) for job in critical)
-        out.append("<p style=\"color:red\">These jobs are in a CRITICAL state: {0}</p>".format(jobs))
+        out.append("<p style=\"color:#B26200\">These jobs are in a CRITICAL state: {0}</p>".format(jobs))
         exitcode = 2
 
     if exitcode == 0:
         out = ["All jobs match the required state"]
 
-    sys.stdout.write('<hr>'.join(str(job) for job in out))
+    sys.stdout.write('<br>'.join(str(job) for job in out))
     sys.exit(exitcode)
 
 if __name__ == "__main__":
