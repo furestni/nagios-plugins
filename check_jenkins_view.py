@@ -47,13 +47,13 @@ def getopts():
 # fetch view
 ######################################################################
 def fetchview(baseurl, view):
+    url = baseurl + "/view/" + view + "/api/json"
     try:
-        url = baseurl + "/view/" + view + "/api/json"
         response = urllib2.urlopen(url).read()
         data = json.loads(response)
     except Exception:
         import traceback
-        sys.stdout.write('ERROR: API could not be queried')
+        sys.stdout.write("ERROR: API <a href=\"{0}\" target=\"_blank\">{0}</a> could not be queried'.format(url))
         sys.exit(3)
     return data
 
