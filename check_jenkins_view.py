@@ -53,7 +53,7 @@ def fetchview(baseurl, view):
         data = json.loads(response)
     except Exception:
         import traceback
-        sys.stdout.write("ERROR: API <a href=\"{0}\" target=\"_blank\">{0}</a> could not be queried'.format(url))
+        sys.stdout.write("ERROR: API <a href=\"{0}\" target=\"_blank\">{0}</a> could not be queried".format(url))
         sys.exit(3)
     return data
 
