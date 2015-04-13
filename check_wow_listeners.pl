@@ -3,6 +3,7 @@
 use strict;
 use XML::LibXML;
 use Getopt::Long;
+use utils qw($TIMEOUT %ERRORS &print_revision &support);
 
 my $staturl = "http://" . $ARGV[0] . ":8086/connectioncounts";
 my $user = '';
