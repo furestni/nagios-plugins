@@ -1,8 +1,9 @@
 #!/usr/bin/perl
 
 use strict;
-use XML::LibXML;
 use Getopt::Long;
+use lib "/usr/lib/nagios/plugins";
+use lib "/usr/local/nagios/libexec";
 use utils qw($TIMEOUT %ERRORS &print_revision &support);
 
 my $staturl = "http://" . $ARGV[0] . ":8086/connectioncounts";
