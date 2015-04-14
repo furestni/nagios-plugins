@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
+use XML::LibXML;
 use Getopt::Long;
 use lib "/usr/lib/nagios/plugins";
 use lib "/usr/local/nagios/libexec";
