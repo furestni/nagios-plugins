@@ -7,9 +7,9 @@ criticallevel=98
 #ExcludeFilter , need to be implemented
 excludefilter=''
 
-for hostname in Isilon-ix-SmartConnect.stxt.media.int Isilon-cu01-SmartConnect.stxt.media.int
+for hostname in isilon-ix-smartconnect.stxt.media.int isilon-cu01-smartconnect.stxt.media.int
 do
-  if [ $hostname == "Isilon-ix-SmartConnect.stxt.media.int" ]
+  if [ $hostname == "isilon-ix-smartconnect.stxt.media.int" ]
   then
     servicelist=$( ssh root@isilon-ix-smartconnect.stxt.media.int -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q -C "isi quota ls" | awk '$5 ~ "[[:digit:]]" { print $3 }'  )
     cfgfile="/etc/icinga2/zones.d/zone-ix/isilonshare.conf"
@@ -20,11 +20,6 @@ do
 
   if [[ ! -z $servicelist ]]
   then
-     # Write host definition for Smart Connect
-    echo -e "object Host \"$hostname\" { 
-    import \"generic-host\"
-    address = \"$hostname\"
-    } " >  $cfgfile.tmp
     
     # Write Services for Smart Connect Host
     for y in $servicelist
