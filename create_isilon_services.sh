@@ -20,6 +20,9 @@ do
 
   if [[ ! -z $servicelist ]]
   then
+
+    # Clear tmp file
+    echo "" > $cfgfile.tmp
     
     # Write Services for Smart Connect Host
     for y in $servicelist
