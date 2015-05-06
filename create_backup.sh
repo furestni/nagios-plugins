@@ -67,7 +67,7 @@ fi
 EOF
 
 #Check if file written and not empty
-if ssh -q root@$icinga2core $sshoptions test -e $destfilename;
+if ssh -q root@$icinga2core $sshoptions test -s $destfilename;
 then 
   echo OK - Last Backup performed at $(date +%Y-%m-%d-%H:%M:%S)
   exit 0
