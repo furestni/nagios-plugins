@@ -7,6 +7,7 @@ sshoptions="-q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o Lo
 function usage {
    echo "usage:"
    echo "-H Fortigate Host"
+   echo "-t type fortigate or nexus"
    echo "-i Identification for ssh login"
    echo "-u User for backup"
    echo "-p Path; where to save backups"
@@ -14,7 +15,7 @@ function usage {
 }
 
 # Catch Arguments
-while getopts ":H:i:p:u:" optname
+while getopts ":H:i:p:u:t:" optname
 do
   case "$optname" in
     "H")
@@ -28,6 +29,9 @@ do
       ;;
     "u")
       user=$OPTARG
+      ;;
+    "t")
+      type=$OPTARG
       ;;
     "?")
       echo "Unknown option $OPTARG"
@@ -53,7 +57,13 @@ if [ ! -d $path ]
 then
   mkdir -p $path
 fi
-scp -i $key $sshoptions $user@$host:sys_config $destfilename 
+if [ "$type" = "fortigate" ]
+then
+   scp -i $key $sshoptions $user@$host:sys_config $destfilename 
+elif [ "$type" = "cisco" ]
+then
+   ssh -i $key $sshoptions $user@$host -C 'show run' > $destfilename
+fi
 EOF
 
 #Check if file written and not empty
