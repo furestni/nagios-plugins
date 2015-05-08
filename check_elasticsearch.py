@@ -38,8 +38,7 @@ def getopts():
 ######################################################################
 # fetch api
 ######################################################################
-def fetch(hostname, port):
-    url = "http://" + hostname + ":" + str(port) + "/_cluster/health"
+def fetch(url):
     try:
         response = urllib2.urlopen(url).read()
         data = json.loads(response)
@@ -69,10 +68,11 @@ def main():
     parser = getopts()
     (options, args) = parser.parse_args()
 
-    health = fetch(options.servername, options.port)
+    url = "http://" + options.servername + ":" + str(options.port) + "/_cluster/health"
+    health = fetch(url)
     (exitcode, out) = check(health)
 
-    sys.stdout.write(out)
+    sys.stdout.write("<a href=\"{1}\" target=\"_blank\">{0}</a>".format(out, url))
     sys.exit(exitcode)
 
 if __name__ == "__main__":
