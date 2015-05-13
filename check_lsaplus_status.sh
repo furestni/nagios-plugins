@@ -1,8 +1,41 @@
-#!/bin/sh
+#!/bin/bash
+
+function usage {
+   echo "usage:"
+   echo "-H Host"
+   echo "-t [checkDVR/checkActuallity]"
+   exit 3
+}
+
+if (($# == 0)); then
+   usage
+   exit 2
+fi
+
+# Catch Arguments
+while getopts ":H:t:" optname
+do
+  case "$optname" in
+    "t")
+      type=$OPTARG
+      ;;
+    "H")
+      host=$OPTARG
+      ;;
+    ":")
+      echo "No argument value for option $OPTARG"
+      usage
+      ;;
+    *)
+      #Should not occur
+      echo "Unknown error while processing options"
+      usage
+      ;;
+  esac
+done
 
 stations=( drs1 drs2 drs3 drs4news drsmw rr drsvirus espace-2 la-1ere option-musique regi_ag_so regi_bs_bl regi_be_fr_vs regi_ost regi_zentr regi_zh_sh rsj rsp rsc_de rsc_fr rsc_it reteuno retedue retetre couleur3 drs_event rts_event rsi_event rr_event regi_gr )
 qualities=(32 96)
-host=$2
 url_base="http://"$host"/audio/"
 url_playlist=".stream/chunklist_DVR.m3u8"
 tmppath="/tmp/lsaplus/"
@@ -63,15 +96,8 @@ function checkDVR
   fi
 }
 
-while [ "$1" != "" ]; do
-  case $1 in
-   checkDVR )               shift
-                            checkDVR
-                            ;;
-   checkActuallity )        checkActuallity
-                            ;;
-   * )                      echo "use checkDVR or checkActuallity and Host-IP"
-                            ;;
-   esac
-   shift
-done
+if [ $type == "checkDVR" ]; then
+  checkDVR
+elif [ $type == "" ]; then
+  checkActuallity
+fi
