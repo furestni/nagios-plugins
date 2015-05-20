@@ -113,7 +113,7 @@ if [ "$type" == "icecast" ]; then
   /m/rsj/mp3_128 \
   /m/rsp/aacp_32 \
   /m/rsp/aacp_96 \
-  /m/rsp/mp3_128 \
+  /m/rsp/mp3_128"
   command="$pluginpath/check_ice -p 80 -H streaming.swisstxt.ch -p 80 -m"
 
 #
