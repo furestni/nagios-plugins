@@ -54,9 +54,6 @@ if [ "$type" == "icecast" ]; then
   /m/drs4news/aacp_32 \
   /m/drs4news/aacp_96 \
   /m/drs4news/mp3_128 \
-  /m/drs_event/aacp_32 \
-  /m/drs_event/aacp_96 \
-  /m/drs_event/mp3_128 \
   /m/drsmw/aacp_32 \
   /m/drsmw/aacp_96 \
   /m/drsmw/mp3_128 \
@@ -102,9 +99,6 @@ if [ "$type" == "icecast" ]; then
   /m/rr/aacp_32 \
   /m/rr/aacp_96 \
   /m/rr/mp3_128 \
-  /m/rr_event/aacp_32 \
-  /m/rr_event/aacp_96 \
-  /m/rr_event/mp3_128 \
   /m/rsc_de/aacp_32 \
   /m/rsc_de/aacp_96 \
   /m/rsc_de/mp3_128 \
@@ -114,19 +108,28 @@ if [ "$type" == "icecast" ]; then
   /m/rsc_it/aacp_32 \
   /m/rsc_it/aacp_96 \
   /m/rsc_it/mp3_128 \
-  /m/rsi_event/aacp_32 \
-  /m/rsi_event/aacp_96 \
-  /m/rsi_event/mp3_128 \
   /m/rsj/aacp_32 \
   /m/rsj/aacp_96 \
   /m/rsj/mp3_128 \
   /m/rsp/aacp_32 \
   /m/rsp/aacp_96 \
   /m/rsp/mp3_128 \
-  /m/rts_event/aacp_32 \
-  /m/rts_event/aacp_96 \
-  /m/rts_event/mp3_128"
   command="$pluginpath/check_ice -p 80 -H streaming.swisstxt.ch -p 80 -m"
+
+#
+#/m/rts_event/aacp_32 \
+#/m/rts_event/aacp_96 \
+#/m/rts_event/mp3_128 \
+#/m/rsi_event/aacp_32 \
+#/m/rsi_event/aacp_96 \
+#/m/rsi_event/mp3_128 \
+#/m/rr_event/aacp_32 \
+#/m/rr_event/aacp_96 \
+#/m/rr_event/mp3_128 \
+#/m/drs_event/aacp_32 \
+#/m/drs_event/aacp_96 \
+#/m/drs_event/mp3_128 \
+#
  
 elif [ "$type" == "wowza" ]; then
    stream_list="\
