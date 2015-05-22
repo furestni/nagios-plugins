@@ -143,7 +143,7 @@ foreach $j (keys(%ptotal)) {
 	foreach $k1 (keys(%{$ptotal{$j}})) {
 
         	$line = sprintf ("%-30s %-50s %-20s:", Opts::get_option('cluster'), $j, $k1);
-		$valname = join (":", $k1, $j);
+		$valname = join ("_", $k1, $j);
 		$valname =~ s/ /_/;
 
 
