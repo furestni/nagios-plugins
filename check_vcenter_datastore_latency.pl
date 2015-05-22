@@ -426,7 +426,6 @@ sub getConfigFile($){
 
 ## SSL-Workaround
 BEGIN {
-   $ENV{PERL_NET_HTTPS_SSL_SOCKET_CLASS} = "Net::SSL";
    $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
 }
 
