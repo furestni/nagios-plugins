@@ -11,7 +11,7 @@ use warnings;
 
 use FindBin;
 use lib "$FindBin::Bin/../";
-use lib '/usr/local/lib/vmware-vcli/apps';
+use lib '/usr/lib/vmware-vcli/apps';
 use List::Util qw( sum max );
 use VMware::VIRuntime;
 use AppUtil::HostUtil;
@@ -87,8 +87,8 @@ sub getInstanceFile($) {
 
 
 
-%vc = getConfigFile ('check_vcenter_datastore_latency.cluster');
-my %instanceInfo = getInstanceFile('check_vcenter_datastore_latency.instance');
+%vc = getConfigFile ('/usr/lib64/nagios/plugins/check_vcenter_datastore_latency.cluster');
+my %instanceInfo = getInstanceFile('/usr/lib64/nagios/plugins/check_vcenter_datastore_latency.instance');
 
 
 Opts::add_options(%opts);
