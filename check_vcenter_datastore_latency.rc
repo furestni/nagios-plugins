@@ -1,0 +1,5 @@
+VI_SERVER = vcenter.stxt.media.int
+VI_USERNAME = stxtMonitoring
+VI_PASSWORD = moni@txt2011
+VI_PROTOCOL = https
+VI_PORTNUMBER = 443
