@@ -106,8 +106,8 @@ sub getInstanceFile($) {
 }
 
 
-
-%vc = getConfigFile ('check_vcenter_datastore_latency.cluster');
+%vc = getConfigFile ('/usr/lib64/nagios/plugins/check_vcenter_datastore_latency.cluster');
+#%vc = getConfigFile ('check_vcenter_datastore_latency.cluster');
 my %instanceInfo = getInstanceFile('check_vcenter_datastore_latency.instance');
 
 
