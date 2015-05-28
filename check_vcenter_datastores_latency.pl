@@ -11,7 +11,7 @@ use warnings;
 
 use FindBin;
 use lib "$FindBin::Bin/../";
-use lib '/usr/local/lib/vmware-vcli/apps';
+use lib '/usr/lib/vmware-vcli/apps';
 use List::Util qw( sum max );
 use VMware::VIRuntime;
 use AppUtil::HostUtil;
