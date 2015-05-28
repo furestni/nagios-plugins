@@ -76,7 +76,7 @@ sub getInstanceFile($) {
 
         while (<IF>) {
                 chomp;
-                my ($id,$nickname,$other) = split(':');
+                my ($id,$nickname,$other) = split(';');
                 $i{$id}{'nickname'} = $nickname;
         }
         close (IF);
