@@ -24,7 +24,6 @@ sub getConfigFile($);
 
 sub avg { sum(@_)/@_ }
 
-my %vc;
 my %ptotal;
 my $opt_samples = 30; ## 5 min = 30
 my $opt_debug = 0;
@@ -106,9 +105,8 @@ sub getInstanceFile($) {
 }
 
 
-%vc = getConfigFile ('/usr/lib64/nagios/plugins/check_vcenter_datastore_latency.cluster');
-#%vc = getConfigFile ('check_vcenter_datastore_latency.cluster');
-my %instanceInfo = getInstanceFile('check_vcenter_datastore_latency.instance');
+my %vc = getConfigFile ('/usr/lib64/nagios/plugins/check_vcenter_datastore_latency.cluster');
+my %instanceInfo = getInstanceFile('/usr/lib64/nagios/plugins/check_vcenter_datastore_latency.instance');
 
 
 Opts::add_options(%opts);
