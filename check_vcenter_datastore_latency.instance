@@ -9,3 +9,8 @@ f189b259-874adb03;ix_perf_z1_p1_c1;x.b-ix-dc.stor.int:/ifs/perf/virt/cloud/ix_pe
 d5fad177-d4bd201e;ix_perf_z1_p1_c2;x.b-ix-dc.stor.int:/ifs/perf/virt/cloud/ix_perf_z1_p1_c2;3a26b2cbc6043a94ae78ecb033ba4852;Storage_IX_Performance_Perf
 2cbaf95a-b046ce36;ix_eco_z1_p1_c2;nl.b-ix-dc.stor.int:/ifs/eco/virt/cloud/ix_eco_z1_p1_c2;c5a5cb4fa615386493f400a7e5353756;Storage_IX_Performance_Eco
 b255577d-7aced659;ix_med_z1_p1_c2;x.b-ix-dc.stor.int:/ifs/med/virt/cloud/ix_med_z1_p1_c2;c6dc10df69ad30f39f50e1b56dfea93e;Storage_IX_Performance_Medium
+83cca389-27333e8d;cu01_eco_z1_p1_c1;nl.b-dc.stor.int:/ifs/eco/virt/cloud/cu01_eco_z1_p1_c1;5fca56f460e4351491809c5cc49e9515;Storage_Biel_Performance_Eco
+1b309bc4-a514cb26;cu01_med_z1_p1_c1;x.b-dc.stor.int:/ifs/med/virt/cloud/cu01_med_z1_p1_c1;b23d6f8dfb6e35ee9f840ad1d6bbff04;Storage_Biel_Performance_Medium
+704353d6-162daada;fs_cs_zone01_secstor;b-cs-secstor.stor.int:/ifs/eco/virt/cloud/fs_cs_zone01_secstor;ebce1d8ba529314794bc889ebed4a1e4;Storage_Biel_Performance_Eco_Remote
+524c29ed-7adf6fe2-e495-0025b500002f;PerfPlus01_cu01_stor_002;naa.60060160e8d03500616b19546f2be311;;Storage_IX_Performance_PerfPlus
+bb6f9d76-dcfa1eb7;cu01_perf_z1_p1_c1;x.b-dc.stor.int:/ifs/perf/virt/cloud/cu01_perf_z1_p1_c1;06814d49eac23bfda3e49fab90030159;Storage_Biel_Performance_Perf
