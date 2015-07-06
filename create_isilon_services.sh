@@ -34,7 +34,7 @@ do
        check_command  = \"check_by_ssh\"
        
        vars.user = \"root\" 
-       vars.timeout = \"30\"
+       vars.timeout = \"60\"
        vars.option = [ \"UserKnownHostsFile=/dev/null\", \"StrictHostKeyChecking=no\" ]
        vars.command = \"/bin/bash /ifs/data/nagios/isilon-quota-usage.sh -p $y -w $warninglevel -c $criticallevel\"
        assign where host.address == \"$hostname\"
