@@ -313,7 +313,7 @@ $message = $okMsg;
 # }
 
 
-$np->nagios_exit(0, $message );
+$np->nagios_exit($status, $message );
 
 
 sub logD {
