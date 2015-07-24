@@ -1,55 +1,34 @@
 #!/usr/bin/perl
 # ============================================================================
-# 
+# check_datastore_latency.pl
 # ============================================================================
 use strict;
 use warnings;
-use lib '/usr/local/lib/vmware-vcli/apps';
-use lib '/usr/lib/vmware-vcli/apps';
-use VMware::VIRuntime;
-use VMware::VILib;
-use Time::HiRes qw( time );
+use Getopt::Long;
 use List::Util qw( sum );
+use Storable qw(lock_retrieve);
+use Data::Dumper;
 
 # ---
 # --- Global Variables
 # ---
-my $t0;					# for timing purposes only
-my %opts = ( 				# Define additional options
-	'esx' => {
-		type => "=s",
-		help => "List of ESX hosts to query",
-		required => 1,
-	},
-	'datastore' => { 
-		type => "=s",
-		help => "List of Datastores to query",
-		required => 1,
-	},
-	'summary' => {
-		type => "=s",
-		help => "Display Text",
-		required => 0,
-	},
-	'w' => {
-		type => '=i',
-		help => "Warning in ms",
-		required => 1,
-	},
-	'c' => {
-		type => '=i',
-		help => "Critical in ms",
-		required => 1,
-	}
-);
-my $host_view;				# All ESX hosts object
-my $perfmgr_view;			# Global performance manager object
-my $host_ref;				# reference to one ESX host object
+my $opt_esx;
+my $opt_datastore;
+my $opt_w;
+my $opt_c;
+my $opt_help;
+my $opt_dummy;
+
+my $host_key;				# key to one ESX host hash
 my @perf_metric_ids;			# array of performance metrics filter objects
 my $perf_data;				# reference to performance data object
-my @opt_datastore;			# Array of datastores
-my @opt_esx;				# Array of ESX
+my @list_datastore;			# Array of datastores
+my @list_esx;				# Array of ESX
 my $opt_debug = 0;			# to show or not to show: debugging messages
+my $esx_data;                           # datastructure for esx-data
+my $file_esx_data = "/tmp/esx-data.dat"; # file name for esx data 
+
+
 # ---
 # --- Subroutines
 # ---
@@ -67,100 +46,81 @@ sub genPerfMetricIdArray() {
 	return @a;
 }
 
+sub app_usage {
+        print STDERR <<EndOfUsage;
+--esx host,...,host	List of ESX hosts to query
+--datastore 		List of Datastores to query
+-w                      Warning in ms
+-c                      Critical in ms
+
+EndOfUsage
+        exit 3;
+}
+
+
 
 # ============================================================================
 # === MAIN                                                                 ===
 # ============================================================================
 
-Opts::add_options(%opts);
-Opts::parse();
-Opts::validate();
+&app_usage if (!GetOptions (
+		"esx=s"		=>	\$opt_esx,		# --esx
+                "datastore=s"   =>      \$opt_datastore,        # --datastore
+		"w=i"		=>	\$opt_w,		# -w
+		"c=i"		=>	\$opt_c,		# -c
+                "help"          =>      \$opt_help,             # --help
+		"config=s"	=>	\$opt_dummy,
+		"server=s"      =>      \$opt_dummy,
+		"username=s"      =>      \$opt_dummy,
+		"password=s"      =>      \$opt_dummy,
+) or $opt_help );
 
-@opt_datastore = split (',', Opts::get_option('datastore'));
-@opt_esx = split (',', Opts::get_option('esx'));
+unless (-f $file_esx_data) {
+	print "no datafile found\n";
+	exit 3;
+}
 
-Util::connect();
+$esx_data = lock_retrieve($file_esx_data);
+unless (defined($esx_data)) {
+	print "NO DATA\n";
+	exit 3;
+}
+#print Dumper $esx_data;
 
-$t0 = time();
-$host_view = Vim::find_entity_views(view_type => 'HostSystem');
-printf ("[INFO] find_entity_views HostSystem: %.3fs\n", time()-$t0) if ($opt_debug);
-
-
-$t0 = time();
-$perfmgr_view = Vim::get_view(mo_ref => Vim::get_service_content()->perfManager);
-printf ("[INFO] get perfmgr_view: %.3fs\n", time()-$t0) if ($opt_debug);
-
-$t0 = time();
-@perf_metric_ids = genPerfMetricIdArray();
-printf ("[INFO] generate filter object: %.3fs\n", time()-$t0) if ($opt_debug);
-
+@list_datastore = split (',', $opt_datastore);
+@list_esx = split (',', $opt_esx);
 
 my %latency_values;
+my $host_view;
 
-foreach $host_ref (@$host_view) {
-	next unless (grep {$_ eq $host_ref->name} @opt_esx);	# skip current ESX if not in query list
+foreach my $esx_key (@list_esx) {
+	printf "[INFO] Processing ESX host %s\n", $esx_key if ($opt_debug); 
 
-	printf "[INFO] Processing ESX host %s (%s)\n", $host_ref->name, $host_ref->summary->config->product->fullName if ($opt_debug); 
+	#### Datastructure hint:
+	#### $esx_data{$host_ref->name}{'datastore'}{$dsname}{$v_ref->id->counterId} = $v_ref->value;
 
-	my $perf_query_spec = PerfQuerySpec->new(	entity => $host_ref,
-							metricId => \@perf_metric_ids,
-							'format' => 'csv',
-							intervalId => 20,
-							maxSample => 20
-						);
-
-	$t0 = time();
-	eval {
-		$perf_data = $perfmgr_view->QueryPerf( querySpec => $perf_query_spec);
-	};
-	if ($@) {
-		if (ref($@) eq 'SoapFault') {
-			if (ref($@->detail) eq 'InvalidArgument') {
-				Util::trace(0,"Specified parameters are not correct");
-			}
-		}
-		next;
-	}
-	if (! @$perf_data) {
-		Util::trace(0,"Either Performance data not available for requested period or instance is invalid\n");
-		next;
-	}
-	printf ("[INFO] Query performance: %.3fs\n", time()-$t0) if ($opt_debug);
-
-	$t0 = time();
-	foreach my $p_ref (@$perf_data) {
-		my $time_stamps = $p_ref->sampleInfoCSV;
-		print  "Sample info : " . $time_stamps . "\n" if ($opt_debug);
-		my $values = $p_ref->value;
-		foreach my $v_ref (@$values) {
-			# Search Datastore Info
-			my $dsname = "not found";
-			foreach my $ds (@{$host_ref->config->fileSystemVolume->mountInfo}) {
-				my $ds_type = $ds->volume->type;
-				my $uuid = $v_ref->id->instance;
-				if ($ds_type eq "NFS") {
-					$dsname = $ds->volume->remoteHost . ":" . $ds->volume->remotePath if ($ds->mountInfo->path =~ m/$uuid$/);
-				} elsif ($ds_type eq "VMFS") {
-					$dsname = $ds->volume->name if ($ds->volume->uuid eq $v_ref->id->instance);
-				}
-			}
-			if (grep { $_ eq $dsname } @opt_datastore) {
-				printf "%s --- %s --- %s --- %s --> %8.3f\n",
-					$v_ref->id->counterId eq "144" ? 'Read latency' : 'Write latency',
-					$v_ref->id->instance, 
-					$dsname,
-					$v_ref->value,
-					avg(split(',',$v_ref->value)) if ($opt_debug);
-				
-				if (defined($latency_values{$v_ref->id->counterId})) {
-					$latency_values{$v_ref->id->counterId} = join(',', ($v_ref->value,$latency_values{$v_ref->id->counterId}));
-				} else {
-					$latency_values{$v_ref->id->counterId} = $v_ref->value;
-				}
-			}
+	if ($opt_debug) {
+		foreach my $ds_key (keys(%{$esx_data->{$esx_key}{'datastore'}})) {
+			printf "[INFO] host %s has datastore %s\n", $esx_key, $ds_key;
 		}
 	}
-	printf ("[INFO] show latency info: %.3fs\n\n\n", time()-$t0) if ($opt_debug);
+
+	foreach my $ds_key (@list_datastore) {
+		foreach my $p_key (sort(keys(%{$esx_data->{$esx_key}{'datastore'}{$ds_key}}))) {
+			printf "%s --- %s --- %s --> %8.3f\n",
+				$p_key eq "144" ? 'Read latency' : 'Write latency',
+				$ds_key,
+				$esx_data->{$esx_key}{'datastore'}{$ds_key}{$p_key},
+				avg(split(',', $esx_data->{$esx_key}{'datastore'}{$ds_key}{$p_key})) if ($opt_debug);
+
+			if (defined($latency_values{$p_key})) {
+				$latency_values{$p_key} = join(',', ($esx_data->{$esx_key}{'datastore'}{$ds_key}{$p_key},$latency_values{$p_key}));
+			} else {
+				$latency_values{$p_key} = $esx_data->{$esx_key}{'datastore'}{$ds_key}{$p_key};
+			}
+		}
+
+	}
 }
 
 # Summary:
@@ -179,37 +139,37 @@ foreach my $l_ref (sort(keys(%latency_values))) {
 
 	printf "%s --- %s --- %s --> %8.3f\n",
 		$latency_type,	
-		join(',',@opt_datastore),
+		join(',',@list_datastore),
 		$latency_values{$l_ref},
 		$average_latency if ($opt_debug);
 
 	push (@i_performance, sprintf "%s=%.5fs", $latency_type, $average_latency/1000);	
 
-	if ($average_latency > Opts::get_option('c')) {
+	if ($average_latency > $opt_c ) {
 		printf "Critical: %s > %i ms (%8.3f)\n",
 			$latency_type,
-			Opts::get_option('c'),
+			$opt_c, 
 			$average_latency if ($opt_debug);
 
 		# Criticals first in the list:
 		unshift (@i_status, sprintf "(%s CRITITCAL %.3fms > %ims)",
 			$latency_type,
 			$average_latency,
-			Opts::get_option('c')
+			$opt_c
 		);
 		$exit_code = 2 unless $exit_code > 2;
 
-	} elsif ($average_latency > Opts::get_option('w')) {
+	} elsif ($average_latency > $opt_w) {
 		printf "Warning: %s > %i ms (%8.3f)\n",
 			$latency_type,
-			Opts::get_option('w'),
+			$opt_w,
 			$average_latency if ($opt_debug);
 
 		# Warnings to to end:
 		push (@i_status, sprintf "(%s WARNING %.3fms > %ims)",
 			$latency_type,
 			$average_latency,
-			Opts::get_option('w')
+			$opt_w
 		);
 		$exit_code = 1 unless $exit_code > 1;
 
@@ -236,12 +196,6 @@ printf "Latency %s %s | %s\n",
 	join (' ', @i_status),
 	join (' ', @i_performance);
 	
-# logout
-Vim::logout();
-
 print "EXIT CODE=",$exit_code,"\n";
 exit ($exit_code);
 
-BEGIN {
-   $ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = 0;
-}
