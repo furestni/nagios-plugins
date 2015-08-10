@@ -11,10 +11,10 @@ for hostname in isilon-ix-smartconnect.stxt.media.int isilon-cu01-smartconnect.s
 do
   if [ $hostname == "isilon-ix-smartconnect.stxt.media.int" ]
   then
-    servicelist=$( ssh root@isilon-ix-smartconnect.stxt.media.int -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q -C "isi quota ls" | awk '$5 ~ "[[:digit:]]" { print $3 }'  )
+    servicelist=$( ssh root@isilon-ix-smartconnect.stxt.media.int -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q -C "isi quota quotas list --format=csv --no-header --no-footer" | awk -F, '$5 ~ "[[:digit:]]" { print $3 }'  )
     cfgfile="/etc/icinga2/zones.d/zone-ix/isilonshare.conf"
   else
-    servicelist=$( ssh root@isilon-cu01-smartconnect.stxt.media.int -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q -C "isi quota ls" | awk '$5 ~ "[[:digit:]]" { print $3 }' )
+    servicelist=$( ssh root@isilon-cu01-smartconnect.stxt.media.int -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q -C "isi quota quotas list --format=csv --no-header --no-footer" | awk -F, '$5 ~ "[[:digit:]]" { print $3 }' )
     cfgfile="/etc/icinga2/zones.d/zone-bie/isilonshare.conf"
   fi
 
