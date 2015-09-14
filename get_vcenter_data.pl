@@ -95,7 +95,7 @@ foreach $host_ref (@$host_view) {
 		next;
 	}
 	if (! @$perf_data) {
-		push (@get_status,"Either Performance data not available for requested period or instance is invalid");
+		push (@get_status,"Performance data not available for ".$host_ref->name);
 		$exit_code = 3 if ($exit_code < 3);
 		next;
 	}
