@@ -71,8 +71,8 @@ def get_logstash_instances(nodes, identifier):
 ######################################################################
 def is_zombie(result):
     if result["hits"]["total"] > 0:
-        return True
-    return False
+        return False
+    return True
 
 
 ######################################################################
@@ -89,14 +89,22 @@ def main():
     logstash_instances = get_logstash_instances(nodes, options.identifier)
 
     url = baseurl + "logstash-*/heartbeat/_search?q="
+    zombies = []
     for node_name in logstash_instances.itervalues():
         query = "+type: heartbeat +shipped_by.raw:{0} +@timestamp:>now-{1}s".format(node_name, options.heartbeat)
         query = urllib2.quote(query)
         result = fetch(url + query)
-        print(is_zombie(result))
-    exitcode = 0
+        if is_zombie(result):
+            zombies.append(node_name)
 
-    #sys.stdout.write("{0}".format(logstash_instances))
+    if len(zombies) > 0 :
+        out = "The following logstash instances do not have a heartbeat and are therefore zombies: " + ", ".join(zombies) 
+        exitcode = 2
+    else:
+        out = "All instances are alive and well"
+        exitcode = 0
+
+    sys.stdout.write(out)
     sys.exit(exitcode)
 
 if __name__ == "__main__":
