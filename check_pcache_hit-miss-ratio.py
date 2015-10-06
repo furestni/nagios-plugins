@@ -126,8 +126,6 @@ def get_hit_miss(response):
     total = out["hit"] + out["miss"] + out["expired"] + out["updating"] + out["stale"] + out["passed"]
     out["hit_ratio"] = out["hit"] * 100.0 / total
 
-    print(out)
-    print("hit: %d | miss: %d | hit ratio: %f " % (out["hit"], out["miss"], out["hit_ratio"]))
     return out
 
 ######################################################################
