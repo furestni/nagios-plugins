@@ -51,11 +51,11 @@ do
     cmp $cfgfile $cfgfile.tmp
     if [ $? -eq 1 ]
     then
-      echo "Config Changed, updating now"
+      #echo "Config Changed, updating now"
       cp $cfgfile.tmp $cfgfile
       service icinga2 reload
     else
-      echo "no isilon shares modifications, nothing to do"
+      #echo "no isilon shares modifications, nothing to do"
     fi
   fi
 done
