@@ -119,13 +119,20 @@ def build_query(volumekey, time):
 def get_hit_miss(response):
     out = {
         'hit': 1,
-        'miss': 0,
-        'expired': 0,
-        'updating': 0,
-        'stale': 0,
-        'passed': 0,
         'hit_ratio': 100.0,
+        'miss': 0,
+        'miss_ratio': 0.0,
+        'expired': 0,
+        'expired_ratio': 0.0,
+        'updating': 0,
+        'updating_ratio': 0.0,
+        'stale': 0,
         'stale_ratio': 0.0,
+        'passed': 0,
+        'passed_ratio': 0.0,
+        'else': 0,
+        'else_ratio': 0.0,
+        'total': 0,
     }
     for i in response["aggregations"]["by_hit_miss"]["buckets"]:
         if i["key"] == "HIT": out["hit"] = i["bytes_sent"]["value"]
@@ -134,10 +141,18 @@ def get_hit_miss(response):
         elif i["key"] == "UPDATING": out["updating"] = i["bytes_sent"]["value"]
         elif i["key"] == "STALE": out["stale"] = i["bytes_sent"]["value"]
         elif i["key"] == "-": out["passed"] = i["bytes_sent"]["value"]
+        else:  out["else"] = out["else"] + i["bytes_sent"]["value"]
 
-    total = out["hit"] + out["miss"] + out["expired"] + out["updating"] + out["stale"] + out["passed"]
+    total = out["hit"] + out["miss"] + out["expired"] + out["updating"] + out["stale"] + out["passed"] + out["else"]
+    out["total"] = total
+
     out["hit_ratio"] = out["hit"] * 100.0 / total
+    out["miss_ratio"] = out["miss"] * 100.0 / total
+    out["expired_ratio"] = out["expired"] * 100.0 / total
+    out["updating_ratio"] = out["updating"] * 100.0 / total
     out["stale_ratio"] = out["stale"] * 100.0 / total
+    out["passed_ratio"] = out["passed"] * 100.0 / total
+    out["else_ratio"] = out["else"] * 100.0 / total
 
     return out
 
