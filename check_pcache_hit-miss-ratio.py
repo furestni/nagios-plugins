@@ -143,16 +143,15 @@ def get_hit_miss(response):
         elif i["key"] == "-": out["passed"] = i["bytes_sent"]["value"]
         else:  out["else"] = out["else"] + i["bytes_sent"]["value"]
 
-    total = out["hit"] + out["miss"] + out["expired"] + out["updating"] + out["stale"] + out["passed"] + out["else"]
-    out["total"] = total
+    out["total"] = out["hit"] + out["miss"] + out["expired"] + out["updating"] + out["stale"] + out["passed"] + out["else"]
 
-    out["hit_ratio"] = out["hit"] * 100.0 / total
-    out["miss_ratio"] = out["miss"] * 100.0 / total
-    out["expired_ratio"] = out["expired"] * 100.0 / total
-    out["updating_ratio"] = out["updating"] * 100.0 / total
-    out["stale_ratio"] = out["stale"] * 100.0 / total
-    out["passed_ratio"] = out["passed"] * 100.0 / total
-    out["else_ratio"] = out["else"] * 100.0 / total
+    out["hit_ratio"] = out["hit"] * 100.0 / out["total"]
+    out["miss_ratio"] = out["miss"] * 100.0 / out["total"]
+    out["expired_ratio"] = out["expired"] * 100.0 / out["total"]
+    out["updating_ratio"] = out["updating"] * 100.0 / out["total"]
+    out["stale_ratio"] = out["stale"] * 100.0 / out["total"]
+    out["passed_ratio"] = out["passed"] * 100.0 / out["total"]
+    out["else_ratio"] = out["else"] * 100.0 / out["total"]
 
     return out
 
