@@ -22,7 +22,7 @@ def version():
 def getopts():
   program = os.path.basename(sys.argv[0])
 
-  usg = "{0} -h | -e | -v | -w  | -c | -t | -s | -p  ".format(program)
+  usg = "{0} [options]".format(program)
   parser = OptionParser(usage=usg)
 
   parser.add_option("-e", "--elastic", dest="servername",
