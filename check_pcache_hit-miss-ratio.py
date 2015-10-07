@@ -166,7 +166,7 @@ def main():
 
     out = out + " | "
     for key,val in hit_miss.items():
-        out = out + "{} = {}".format(key, val) + ";;;0, "
+        out = out + "{}={}".format(key, val) + ";;;0,"
 
     sys.stdout.write(out)
     sys.exit(exitcode)
