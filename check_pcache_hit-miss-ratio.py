@@ -97,6 +97,13 @@ def build_query(volumekey, time):
         "by_hit_miss" : {
             "terms" : {
                 "field" : "upstream_cache_status.raw"
+            },
+            "aggs": {
+            	"bytes_sent": {
+              	    "sum": {
+                        "field": "body_bytes_sent"
+                    }
+                }
             }
         }
     }
@@ -121,12 +128,12 @@ def get_hit_miss(response):
         'stale_ratio': 0.0,
     }
     for i in response["aggregations"]["by_hit_miss"]["buckets"]:
-        if i["key"] == "HIT": out["hit"] = i["doc_count"]
-        elif i["key"] == "MISS": out["miss"] = i["doc_count"]
-        elif i["key"] == "EXPIRED": out["expired"] = i["doc_count"]
-        elif i["key"] == "UPDATING": out["updating"] = i["doc_count"]
-        elif i["key"] == "STALE": out["stale"] = i["doc_count"]
-        elif i["key"] == "-": out["passed"] = i["doc_count"]
+        if i["key"] == "HIT": out["hit"] = i["bytes_sent"]["value"]
+        elif i["key"] == "MISS": out["miss"] = i["bytes_sent"]["value"]
+        elif i["key"] == "EXPIRED": out["expired"] = i["bytes_sent"]["value"]
+        elif i["key"] == "UPDATING": out["updating"] = i["bytes_sent"]["value"]
+        elif i["key"] == "STALE": out["stale"] = i["bytes_sent"]["value"]
+        elif i["key"] == "-": out["passed"] = i["bytes_sent"]["value"]
 
     total = out["hit"] + out["miss"] + out["expired"] + out["updating"] + out["stale"] + out["passed"]
     out["hit_ratio"] = out["hit"] * 100.0 / total
@@ -141,9 +148,9 @@ def calc_exit_code(stale_ratio, hit_ratio, warn, critical, stale):
     if stale_ratio > stale:
         return 2, "There are stale upstream cache stati! Are the upstream(s) healthy?"
     elif hit_ratio < critical:
-        return 2, "Hit ratio ({0}%) is smaller than {1}%.".format(hit_ratio, critical)
+        return 2, "Hit ratio of {0}% is smaller than {1}%!".format(hit_ratio, critical)
     elif hit_ratio < warn:
-        return 1, "Hit ratio ({0}%) is smaller than {1}%.".format(hit_ratio, warn)
+        return 1, "Hit ratio of {0}% is smaller than {1}%.".format(hit_ratio, warn)
     else:
         return 0, "Hit ratio of {0}% is healthy.".format(hit_ratio)
 
