@@ -22,7 +22,7 @@ def version():
 def getopts():
   program = os.path.basename(sys.argv[0])
 
-  usg = "{0} -h | -b | -v | -c | -w".format(program)
+  usg = "{0} [options]".format(program)
   parser = OptionParser(usage=usg)
 
   parser.add_option("-b", "--baseurl", dest="baseurl",
