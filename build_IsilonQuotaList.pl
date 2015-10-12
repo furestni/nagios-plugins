@@ -87,7 +87,9 @@ if (defined($opt{'file'})) {
 
 
 $quota_ref = fetchData($opt{'isilon'}, '/platform/1/quota/quotas', $opt{'auth'});
-
+unless (defined($quota_ref)) {
+	exit 1;
+}
 
 
 print "isilon_quota_paths:\n";
@@ -95,7 +97,7 @@ print "isilon_quota_paths:\n";
 foreach my $k (@{$quota_ref->{'quotas'}}) {
 	next unless ((defined($k->{'thresholds'}{'hard'})) || (defined($k->{'thresholds'}{'soft'})));
 
-	print "  - path: ", $k->{'path'}, "\n";
+	print "  - ", $k->{'path'}, "\n";
 
 }
 
