@@ -64,6 +64,9 @@ unless (defined($opt{'isilon'})) {
 }
 $opt{'isilon'} = 'https://isilon-'.$opt{'isilon'}.'.media.int:8080' if (grep  { $opt{'isilon'} eq $_ } qw(ix o m cu01));
 
+$opt{'isilon'} = "https://".$opt{'isilon'} unless ($opt{'isilon'} =~ m/^https/);
+$opt{'isilon'} = $opt{'isilon'}.":8080" unless ($opt{'isilon'} =~ m/:8080$/);
+
 unless (( (defined($opt{'user'}) && defined($opt{'pass'})) || defined($opt{'auth'}))) {
         print '--user ' unless (defined($opt{'user'}));
         print '--pass ' unless (defined($opt{'pass'}));
