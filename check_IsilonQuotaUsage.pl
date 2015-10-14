@@ -122,7 +122,7 @@ if (defined($quota_ref)) {
 			my $limit = defined($k->{'thresholds'}{'hard'}) ? $k->{'thresholds'}{'hard'} : $k->{'thresholds'}{'soft'};
 			if ($limit > 0) {
 				my $usagePct = 100 / $limit * $k->{'usage'}{'logical'};
-				$msg = sprintf "used=%5.1f%%, limit=%.1f GB, used=%.1f GB, free=%.1f GB | used=%.1f%% QuotaTotal=%dB QuotaFree=%dB QuotaUsage=%dB",
+				$msg = sprintf "used=%5.1f%%, limit=%.1f GB, used=%.1f GB, free=%.1f GB | used=%.1f%% QuotaTotal=%dB QuotaUsage=%dB QuotaFree=%dB",
 					$usagePct,
 					$limit/1024/1024/1024,
 					$k->{'usage'}{'logical'}/1024/1024/1024,
