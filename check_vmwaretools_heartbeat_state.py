@@ -87,7 +87,7 @@ def check():
         return 0, "OK: all green"
 
     elif vms:
-        return 2, "WARNING: %s VMs bad vmware tools heartbeat status: %s" % (len(vms), ','.join(vms))
+        return 1, "WARNING: %s VMs bad vmware tools heartbeat status: %s" % (len(vms), ','.join(vms))
 
 def main():
 
