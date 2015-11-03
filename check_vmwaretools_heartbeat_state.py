@@ -84,10 +84,11 @@ def check():
             vms.append(vm.summary.config.name)
 
     if not vms :
-        return 0, "OK: all green"
+        return 0, "OK: all green | vmware_tools_heartbeat_vms_amount=0"
 
     elif vms:
-        return 1, "WARNING: %s VMs bad vmware tools heartbeat status: %s" % (len(vms), ','.join(vms))
+        vms_string = ','.join(vms)
+        return 1, "WARNING: %s VMs bad vmware tools heartbeat status: %s ... | vmware_tools_heartbeat_vms_amount=%s" % (len(vms),vms_string[:82], len(vms))
 
 def main():
 
