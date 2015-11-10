@@ -6,7 +6,7 @@ import json
 import urllib2
 from optparse import OptionParser
 
-__program__ = "check_logtash_zombies"
+__program__ = "check_elasticsearch_cluster_size"
 __version__ = "0.1"
 
 ######################################################################
@@ -33,14 +33,22 @@ def getopts():
                     action="store", type="int", default=9200,
                     help="port of elaticsearch server",
                     metavar="PORT")
-  parser.add_option("-i", "--identifier", dest="identifier",
+  parser.add_option("-e", "--elasticsearch-id", dest="esid",
+                    action="store", type="string", default="elasticsearch",
+                    help="substring that identifies the names of the elasticsearch instances in the cluster",
+                    metavar="ES_ID")
+  parser.add_option("-c", "--elasticsearch-count", dest="escount",
+                    action="store", type="int", default=5,
+                    help="count of elaticsearch servers",
+                    metavar="ES_COUNT")
+  parser.add_option("-l", "--logstash-id", dest="lsid",
                     action="store", type="string", default="logstash",
                     help="substring that identifies the names of the logstash instances in the cluster",
-                    metavar="GLOB")
-  parser.add_option("-b", "--heartbeat", dest="heartbeat",
-                    action="store", type="int", default=120,
-                    help="maximum interval of the logstash heartbeat",
-                    metavar="HEARTBEAT")
+                    metavar="LS_ID")
+  parser.add_option("-k", "--logstash-count", dest="lscount",
+                    action="store", type="int", default=5,
+                    help="count of logstash instances",
+                    metavar="LS_COUNT")
   return parser
 
 ######################################################################
@@ -59,21 +67,12 @@ def fetch(url):
 ######################################################################
 # get logstash instances
 ######################################################################
-def get_logstash_instances(nodes, identifier):
-    logstash_instances = {}
+def get_instances(nodes, identifier):
+    instances = {}
     for node in nodes["nodes"].iteritems():
         if identifier in node[1]["name"]:
-            logstash_instances[node[0]] = node[1]["name"]
-    return logstash_instances
-
-######################################################################
-# check if logstash instances sends heartbeat
-######################################################################
-def is_zombie(result):
-    if result["hits"]["total"] > 0:
-        return False
-    return True
-
+            instances[node[1]["name"]] = node[0]
+    return instances
 
 ######################################################################
 # execute
@@ -86,23 +85,23 @@ def main():
 
     url = baseurl + "_cluster/state/nodes"
     nodes = fetch(url)
-    logstash_instances = get_logstash_instances(nodes, options.identifier)
 
-    url = baseurl + "logstash-*/heartbeat/_search?q="
-    zombies = []
-    for node_name in logstash_instances.itervalues():
-        query = "+type: heartbeat +shipped_by.raw:{0} +@timestamp:>now-{1}s".format(node_name, options.heartbeat)
-        query = urllib2.quote(query)
-        result = fetch(url + query)
-        if is_zombie(result):
-            zombies.append(node_name)
+    ls_instances = get_instances(nodes, options.lsid)
+    es_instances = get_instances(nodes, options.esid)
 
-    if len(zombies) > 0 :
-        out = "The following logstash instances do not have a heartbeat and are therefore zombies: " + ", ".join(zombies) 
-        exitcode = 2
-    else:
-        out = "All instances are alive and well"
-        exitcode = 0
+    out = ""
+    exitcode = 0
+
+    if len(ls_instances) < options.lscount:
+        out = "There are logstash instances missing, we only have: " + ", ".join(ls_instances) + ". " + str(options.lscount) + " instances are expected!\n"
+        exitcode = 1
+
+    if len(es_instances) < options.escount:
+        out = "There are elasticsearch instances missing, we only have: " + ", ".join(es_instances) + ". " + str(options.escount) + " instances are expected!\n"
+        exitcode = 1
+
+    if exitcode == 0:
+        out = "Enough instances of everything!"
 
     sys.stdout.write(out)
     sys.exit(exitcode)
