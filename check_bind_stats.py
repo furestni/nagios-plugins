@@ -43,7 +43,7 @@ def get_stats(url):
 def second_stats(url):
     start = datetime.utcnow()
     sA = get_stats(url)
-    time.sleep(1)
+    time.sleep(30)
 
     sB = get_stats(url)
     diff = (datetime.utcnow() - start)
