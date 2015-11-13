@@ -60,7 +60,7 @@ my %counter;
 foreach my $error (reverse(sort { $a->id <=> $b->id } $ucs->get_errors)) {
 #foreach my $error (@out) {
 	next if (($error->cause eq 'identity-unestablishable') || ($error->severity eq "cleared"));
-	next if (grep $_ eq $error->dn, split(',',$opt{'ignore'}));
+	next if ((defined($opt{'ignore'})) && (grep $_ eq $error->dn, split(',',$opt{'ignore'})));
 	push @out, sprintf ("%s %s %s %s (ack:%s)\n",
 		$error->created,
 		$error->severity,
