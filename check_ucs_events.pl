@@ -14,14 +14,15 @@ my $exitcode = 3;
 ########
 
 GetOptions (
-        "cluster=s"	=> \$opt{cluster},
-        "user=s"        => \$opt{user},
-        "pass=s"        => \$opt{pass},
-        "port=i"   	=> \$opt{port},
-        "verbose"       => \$opt{verbose},
-        "proto=s"     	=> \$opt{proto},
-        "help|?"        => \$opt{help},
-        "man"           => \$opt{man},
+        "cluster=s"	=> \$opt{'cluster'},
+        "user=s"        => \$opt{'user'},
+        "pass=s"        => \$opt{'pass'},
+        "port=i"		=> \$opt{'port'},
+		"ignore=s"		=> \$opt{'ignore'},
+        "verbose"       => \$opt{'verbose'},
+        "proto=s"     	=> \$opt{'proto'},
+        "help|?"        => \$opt{'help'},
+        "man"           => \$opt{'man'},
 ) or pos2usage(2);
 
 pod2usage(1) if $opt{help};
@@ -39,8 +40,6 @@ foreach (qw(cluster user pass)) {
 $opt{'port'} = 80 unless defined($opt{'port'});
 $opt{'proto'} = 'http' unless defined($opt{'proto'});
 $opt{'verbose'} = 0 unless defined($opt{'verbose'});
-
-
 
 $ucs = Cisco::UCS->new(	
 	cluster  => $opt{'cluster'},
@@ -61,6 +60,7 @@ my %counter;
 foreach my $error (reverse(sort { $a->id <=> $b->id } $ucs->get_errors)) {
 #foreach my $error (@out) {
 	next if (($error->cause eq 'identity-unestablishable') || ($error->severity eq "cleared"));
+	next if ((defined($opt{'ignore'})) && (grep $_ eq $error->dn, split(',',$opt{'ignore'})));
 	push @out, sprintf ("%s %s %s %s (ack:%s)\n",
 		$error->created,
 		$error->severity,
@@ -100,8 +100,9 @@ __END__
 	--user          username
 	--pass          password
 	--port          port to use
-        --verbose       verbose, what else?
-        --proto         protocol to use http or https
+    --ignore        entries to discard silently
+    --verbose       verbose, what else?
+    --proto         protocol to use http or https
 	--help          brief help message
 	--man           full documentation
 
@@ -124,6 +125,16 @@ Password for authentifigcation (required)
 =item B<--port>
 
 Port to use, defaults to 80
+
+=item B<--ignore>
+
+Events to discard from event log, comma seperated.
+Example for Power Supply:
+2011-01-07T11:48:38.129 warning sys/chassis-1/psu-4/fault-F0378 Power supply 4 in chassis 1 presence: missing (ack:yes)
+2011-01-07T11:48:38.129 warning sys/chassis-1/psu-2/fault-F0378 Power supply 2 in chassis 1 presence: missing (ack:yes)
+
+use --ignore="sys/chassis-1/psu-4/fault-F0378,sys/chassis-1/psu-2/fault-F0378" to remove from report
+
 
 =item B<--verbose>
 
