@@ -39,6 +39,11 @@ def get_args():
                         action='store',
                         help='Password to use when connecting to host')
 
+    parser.add_argument('-v', '--verbose',
+                        required=False,
+                        action='store_true',
+                        help="verbosity", default=False)
+
     args = parser.parse_args()
     if args.password is None:
         args.password = getpass.getpass(
@@ -79,17 +84,31 @@ def check():
     objView.Destroy()
 
     vms = []
+    tools_not_running = 0
+    tools_not_installed = 0
     for vm in vmList:
         if vm.runtime.powerState == "poweredOn" and vm.guestHeartbeatStatus.lower() != "green":
-            vms.append(vm.summary.config.name)
+            if args.verbose:
+                vms.append(vm.summary.config.name + " " + vm.guest.toolsStatus)
+            else:
+                vms.append(vm.summary.config.name)
+                if vm.guest.toolsStatus == "toolsNotRunning":
+                    tools_not_running += 1
+                elif vm.guest.toolsStatus == "toolsNotInstalled":
+                    tools_not_installed += 1
 
     if not vms :
         return 0, "OK: all green | vmware_tools_heartbeat_vms_amount=0"
 
     elif vms:
         vms_string = ','.join(vms)
-        return 1, "WARNING: %s VMs bad vmware tools heartbeat status: %s ... | vmware_tools_heartbeat_vms_amount=%s" % (len(vms),vms_string[:82], len(vms))
-
+        if args.verbose:
+            for vm in vms:
+                print vm
+            return 0, ""
+        else:
+            return 1, "WARNING: %s VMs bad vmware tools heartbeat status: %s ... | vmware_tools_heartbeat_vms_amount=%s vmware_tools_not_running=%s vmware_tools_not_installed=%s" \
+                        % (len(vms),vms_string[:82], len(vms), tools_not_running, tools_not_installed)
 def main():
 
     (exitcode, out) = check()
