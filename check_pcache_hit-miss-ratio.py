@@ -185,9 +185,9 @@ def main():
 
     (exitcode, out) = calc_exit_code(hit_miss["stale_ratio"], hit_miss["hit_ratio"], options.warn, options.critical, options.stale)
 
-    out = out + " | "
+    out +=  " | "
     for key,val in hit_miss.items():
-        out = out + "{}={}".format(key, val) + ";;;0,"
+        out += "{0}={1:0.0f}".format(key, val) + ";;;0,"
 
     sys.stdout.write(out)
     sys.exit(exitcode)
