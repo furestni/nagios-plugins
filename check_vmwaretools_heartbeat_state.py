@@ -89,7 +89,7 @@ def check():
     for vm in vmList:
         if vm.runtime.powerState == "poweredOn" and vm.guestHeartbeatStatus.lower() != "green":
             if args.verbose:
-                vms.append(vm.summary.config.name + " " + vm.guest.toolsStatus)
+                vms.append(vm.summary.config.name + " " + vm.guest.toolsStatus + " " + vm.guestHeartbeatStatus)
             else:
                 vms.append(vm.summary.config.name)
                 if vm.guest.toolsStatus == "toolsNotRunning":
