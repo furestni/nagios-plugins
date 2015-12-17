@@ -86,7 +86,7 @@ def interpret(health):
         'hotel': 'Build Number',
         'indigo': 'Last File Upload',
         'juliet': 'Server Uptime',
-        'kilo': '"HTTP Header "Via"',
+        'kilo': 'HTTP Header "Via"',
         'lima': 'Local IP Address',
         'mike': 'Not Defined',
         'nancy': 'Server Time',
