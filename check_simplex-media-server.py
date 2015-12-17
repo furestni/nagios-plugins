@@ -97,7 +97,7 @@ def interpret(health):
         'zulu': 'Allover Health Status',
     }
     for i in health:
-        out += meaning[i] + ": " + health[i] + "/n"
+        out += meaning[i] + ": " + health[i] + "<br>"
 
     return out
 
