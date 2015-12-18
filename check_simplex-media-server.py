@@ -74,9 +74,10 @@ def check(health):
 # interpret infos
 ######################################################################
 def interpret(health):
-    out = ""
+    out = "<table border="1" rules="rows">"
+
     meaning = {
-        'alfa': 'Miliseconds to Write and Delete a File',
+        'alfa': 'Milliseconds to Write and Delete a File',
         'beta': 'Concurrent Content Requests',
         'charlie': '# of Files Being Sent to Clients',
         'delta': 'Not Defined',
@@ -96,9 +97,11 @@ def interpret(health):
         'romeo': 'Compatibility Mode',
         'zulu': 'Allover Health Status',
     }
-    for i in health:
-        out += "<b>" + meaning[i] + " (" + i + "):</b> " + health[i] + "<br>"
 
+    for i in health:
+        out += "<tr><td>" + meaning[i] + " (" + i + ")</td><td>" + health[i] + "</td></tr>"
+
+    out += "</table>"
     return out
 
 ######################################################################
@@ -114,7 +117,7 @@ def main():
     (exitcode, out) = check(health)
     info = interpret(health)
 
-    sys.stdout.write("<a href=\"{1}\" target=\"_blank\">{0}</a><br>{2}".format(out, url, info))
+    sys.stdout.write("<b><a href=\"{1}\" target=\"_blank\">{0}</a></b><br>{2}".format(out, url, info))
     sys.exit(exitcode)
 
 if __name__ == "__main__":
