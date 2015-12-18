@@ -74,7 +74,7 @@ def check(health):
 # interpret infos
 ######################################################################
 def interpret(health):
-    out = "<table border='1' rules='rows'>"
+    out = "<table border='0'>"
 
     meaning = {
         'alfa': 'Milliseconds to Write and Delete a File',
@@ -99,7 +99,7 @@ def interpret(health):
     }
 
     for i in health:
-        out += "<tr><td>" + meaning[i] + " (" + i + ")</td><td>" + health[i] + "</td></tr>"
+        out += "<tr style='border-bottom:1px solid #000'><td>" + meaning[i] + " (" + i + ")</td><td>" + health[i] + "</td></tr>"
 
     out += "</table>"
     return out
