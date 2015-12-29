@@ -60,7 +60,7 @@ my %counter;
 foreach my $error (reverse(sort { $a->id <=> $b->id } $ucs->get_errors)) {
 #foreach my $error (@out) {
 	next if (($error->cause eq 'identity-unestablishable') || ($error->severity eq "cleared"));
-	next if ((defined($opt{'ignore'})) && (grep $_ eq $error->dn, split(',',$opt{'ignore'})));
+	next if ((defined($opt{'ignore'})) && (grep $error->dn =~ /$_/, split(',',$opt{'ignore'})));
 	push @out, sprintf ("%s %s %s %s (ack:%s)\n",
 		$error->created,
 		$error->severity,
@@ -128,13 +128,17 @@ Port to use, defaults to 80
 
 =item B<--ignore>
 
-Events to discard from event log, comma seperated.
+Events to discard from event log, regex, comma seperated.
 Example for Power Supply:
 2011-01-07T11:48:38.129 warning sys/chassis-1/psu-4/fault-F0378 Power supply 4 in chassis 1 presence: missing (ack:yes)
 2011-01-07T11:48:38.129 warning sys/chassis-1/psu-2/fault-F0378 Power supply 2 in chassis 1 presence: missing (ack:yes)
 
 use --ignore="sys/chassis-1/psu-4/fault-F0378,sys/chassis-1/psu-2/fault-F0378" to remove from report
 
+Example for general removal:
+015-12-17T15:52:19.296 warning org-root/ls-cu01-pod01-esx-5/fault-F0334 Service profile cu01-pod01-esx-5 is not associated (ack:no)
+
+use --ignore="fault-F0334"
 
 =item B<--verbose>
 
