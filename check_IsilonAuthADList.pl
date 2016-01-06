@@ -99,6 +99,7 @@ if (defined($ads_ref)) {
 	# let's find it...
 	foreach my $k (@{$ads_ref->{'ads'}}) {
 		next unless ($k->{'id'} eq $opt{'name'});
+		$k->{'authentication'} = $k->{'authentication'} ? 'true' : 'false';
 		$msg = sprintf "%s: Authentication=%s Status=%s Site=%s", $k->{'id'}, $k->{'authentication'},$k->{'status'},$k->{'site'};
 
 		if ($k->{'status'} ne "online") {
