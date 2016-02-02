@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+
+import sys
+import argparse
+import requests
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--url', required=True, help='url of the json api')
+    parser.add_argument('--key', required=True, help='key to look for in json')
+    parser.add_argument('--ok-value', required=True, help='ok value the key should have in json')
+    parser.add_argument('--error-value', required=True, help='error value the key should have in json')
+
+    args = parser.parse_args()
+
+    url = args.url
+    key = args.key
+    ok_value = args.ok_value
+    error_value = args.error_value
+
+    try:
+        r = requests.get(url)
+        data_list = r.json()
+    except:
+        print "UNKNOWN: URL '%s' could not be reached or did not return json" % url
+        sys.exit(2)
+
+    error_found = False
+    ok_found = False
+    for data in data_list:
+        if key in data:
+            if data[key] == error_value:
+                error_found = True
+            elif data[key] == ok_value:
+                ok_found = True
+
+    if not error_found and not ok_found:
+        print "UNKNOWN: Key '%s' not found or ok_value '%s' or error_value '%s' not found" % (key, ok_value, error_value)
+        sys.exit(2)
+    elif error_found:
+        print "ERROR: Key '%s' with error-value '%s' found" % (key, error_value)
+        sys.exit(1)
+    elif ok_found:
+        print "OK: Key '%s' with ok-value '%s' found" % (key, ok_value)
+    else:
+        print "UNKNOWN: Key '%s' not found or ok_value '%s' or error_value '%s' not found" % (key, ok_value, error_value)
+        sys.exit(2)
+
+if __name__ == "__main__":
+    main()
