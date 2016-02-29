@@ -18,7 +18,7 @@ import time
 import argparse
 import ssl
 
-ssl._create_default_https_context = ssl._create_unverified_context
+#ssl._create_default_https_context = ssl._create_unverified_context
 
 
 version="1.7 2013/05/22"
