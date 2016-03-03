@@ -108,7 +108,7 @@ def check():
             return 0, ""
         else:
             return 1, "WARNING: %s VMs bad vmware tools heartbeat status: %s ... | vmware_tools_heartbeat_vms_amount=%s vmware_tools_not_running=%s vmware_tools_not_installed=%s" \
-                        % (len(vms),vms_string[:82], len(vms), tools_not_running, tools_not_installed)
+                        % (len(vms), vms_string, len(vms), tools_not_running, tools_not_installed)
 def main():
 
     (exitcode, out) = check()
