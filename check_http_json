@@ -9,8 +9,8 @@ def main():
     parser.add_argument('--url', required=True, help='url of the json api')
     parser.add_argument('--key', required=True, help='key to look for in json')
     parser.add_argument('--ok-value', required=True, help='ok value the key should have in json')
-    parser.add_argument('--error-value', required=True, help='error value the key should have in json')
     parser.add_argument('--warning-value', help='warning value the key should have in json')
+    parser.add_argument('--error-value', help='error value the key should have in json')
 
     args = parser.parse_args()
 
@@ -18,6 +18,7 @@ def main():
     key = args.key
     ok_value = args.ok_value
     error_value = args.error_value
+    warning_value = args.error_value
 
     try:
         r = requests.get(url)
@@ -31,12 +32,14 @@ def main():
     ok_found = False
     for data in data_list:
         if key in data:
-            if str(data[key]) == str(error_value):
+            if error_value and str(data[key]) == str(error_value):
                 error_found = True
-            elif str(data[key]) == str(warning_value):
+            elif warning_value and str(data[key]) == str(warning_value):
                 warning_found = True
             elif str(data[key]) == str(ok_value):
                 ok_found = True
+            else:
+                error_found = True
 
     if not error_found and not ok_found:
         print "UNKNOWN: Key '%s' not found or ok_value '%s' or error_value '%s' not found" % (key, ok_value, error_value)
