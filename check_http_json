@@ -10,6 +10,7 @@ def main():
     parser.add_argument('--key', required=True, help='key to look for in json')
     parser.add_argument('--ok-value', required=True, help='ok value the key should have in json')
     parser.add_argument('--error-value', required=True, help='error value the key should have in json')
+    parser.add_argument('--warning-value', help='warning value the key should have in json')
 
     args = parser.parse_args()
 
@@ -26,25 +27,31 @@ def main():
         sys.exit(2)
 
     error_found = False
+    warning_found = False
     ok_found = False
     for data in data_list:
         if key in data:
-            if data[key] == error_value:
+            if str(data[key]) == str(error_value):
                 error_found = True
-            elif data[key] == ok_value:
+            elif str(data[key]) == str(warning_value):
+                warning_found = True
+            elif str(data[key]) == str(ok_value):
                 ok_found = True
 
     if not error_found and not ok_found:
         print "UNKNOWN: Key '%s' not found or ok_value '%s' or error_value '%s' not found" % (key, ok_value, error_value)
-        sys.exit(2)
+        sys.exit(3)
     elif error_found:
         print "ERROR: Key '%s' with error-value '%s' found" % (key, error_value)
+        sys.exit(2)
+    elif warning_found:
+        print "ERROR: Key '%s' with warning-value '%s' found" % (key, warning_value)
         sys.exit(1)
     elif ok_found:
         print "OK: Key '%s' with ok-value '%s' found" % (key, ok_value)
     else:
         print "UNKNOWN: Key '%s' not found or ok_value '%s' or error_value '%s' not found" % (key, ok_value, error_value)
-        sys.exit(2)
+        sys.exit(3)
 
 if __name__ == "__main__":
     main()
