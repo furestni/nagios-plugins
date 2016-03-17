@@ -51,7 +51,7 @@ do
   esac
 done
 
-for i in ${host//,/ } ; do 
+for i in ${host//,/ } ; do
   if ssh root@$i $sshoptions -C 'find /vmfs/volumes/PerfPlus* -follow -maxdepth 1' > /dev/null ; then
     okcount=$((okcount+1))
   else
@@ -64,12 +64,12 @@ sum=$((okcount + errorcount))
 ratio=$( echo "$okcount*100/$sum"|bc )
 
 if [ "$ratio" -lt "$critical" ]; then
-   echo "Critical - PerfStorage not available for $errorcount host(s): $errorlist | avail=$ratio%"
+   echo "Critical - PerfPlusStorage not available for $errorcount host(s): $errorlist | avail=$ratio%"
    exit 2
 elif [ "$ratio" -lt "$warning" ]; then
-   echo "Warning - PerfStorage not available for host(s) $errorlist | avail=$ratio%"
+   echo "Warning - PerfPlusStorage not available for host(s) $errorlist | avail=$ratio%"
    exit 1
 else
-   echo "OK - $ratio% Perfstorage available on all $sum ESX hosts | avail=$ratio%"
+   echo "OK - $ratio% PerfPlusStorage available on all $sum ESX hosts | avail=$ratio%"
    exit 0
 fi
