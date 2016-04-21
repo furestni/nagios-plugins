@@ -43,18 +43,18 @@ def main():
                 nok_found = True
 
     if error_found:
-        print "ERROR: Key '%s' with error-value '%s' found" % (key, error_value)
+        print "ERROR: Key '%s' with error-value '%s' found on %s" % (key, error_value, url)
         sys.exit(2)
     elif warning_found:
-        print "ERROR: Key '%s' with warning-value '%s' found" % (key, warning_value)
+        print "ERROR: Key '%s' with warning-value '%s' found on %s" % (key, warning_value, url)
         sys.exit(1)
     elif ok_found:
-        print "OK: Key '%s' with ok-value '%s' found" % (key, ok_value)
+        print "OK: Key '%s' with ok-value '%s' found on %s" % (key, ok_value, url)
     elif nok_found:
-        print "ERROR: Key '%s' is not ok" % key
+        print "ERROR: Key '%s' is not ok on %s" %  (key, url)
         sys.exit(2)
     else:
-        print "UNKNOWN: Key '%s' not found or ok_value '%s' or error_value '%s' not found" % (key, ok_value, error_value)
+        print "UNKNOWN: Key '%s' not found or ok_value '%s' or error_value '%s' not found on %s" % (key, ok_value, error_value, url)
         sys.exit(3)
 
 if __name__ == "__main__":
