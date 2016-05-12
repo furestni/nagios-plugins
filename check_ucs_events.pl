@@ -4,6 +4,7 @@ use warnings;
 use Cisco::UCS;
 use Getopt::Long;
 use Pod::Usage;
+#use Data::Dumper;
 
 my %opt;
 my $ucs;
@@ -57,8 +58,12 @@ unless ($ucs->login) {
 my @out;
 my %serv;
 my %counter;
+
+# init counter
+$counter{'yes'} = 0;    # ack errors counter
+$counter{'errors'} = 0; # all errors counter
+
 foreach my $error (reverse(sort { $a->id <=> $b->id } $ucs->get_errors)) {
-#foreach my $error (@out) {
 	next if (($error->cause eq 'identity-unestablishable') || ($error->severity eq "cleared"));
 	next if ((defined($opt{'ignore'})) && (grep $error->dn =~ /$_/, split(',',$opt{'ignore'})));
 	push @out, sprintf ("%s %s %s %s (ack:%s)\n",
@@ -79,10 +84,13 @@ if (@out == 0) {
 } else {
 	print join (", ", map { "$serv{$_} $_" } sort(keys(%serv))), "\n";
 	print @out;
-	$exitcode = 1;
+	$exitcode = ($counter{'yes'} == $counter{'errors'}) ? 0 : 1; # return OK if all errors are acknolaged on UCS
 }
+
 # Close our session
 $ucs->logout();
+
+printf "return code = %d\n", $exitcode if ($opt{'verbose'});
 
 exit $exitcode;
 
@@ -142,7 +150,7 @@ use --ignore="fault-F0334"
 
 =item B<--verbose>
 
-Verbose mode, might return more information, might be not a good idea for monitoring
+Verbose mode, will print the exit code, too.
 
 =item B<--proto>
 
@@ -161,7 +169,7 @@ Prints the manual page and exits.
 =head1 DESCRIPTION
 	
 B<check_ucs_events.pl> fetches the event log from the given ucs cluster and prints 
-a statistic and events. Return Code for icinga monitoring.
+a statistic and events. Return Code for icinga monitoring. Acknowledged entries will be listed, but ignored for the return code.
 
 =cut
 
