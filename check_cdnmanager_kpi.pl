@@ -95,7 +95,7 @@ my $client = REST::Client->new({
 	host => 'https://'.$opt{'host'}
 });
 
-my $query = '/query?q=select+count('.$opt{'count'}.')+from+'.$opt{'from'}.'+where+service+%3D+%27'.$opt{'service'}.'%27+and+time+%3E+now()+-+'.$opt{'minutes'}.'m+order+by+time+desc+limit+1%3B&db='.$opt{'db'};
+my $query = '/query?q=select+count('.$opt{'count'}.')+from+'.$opt{'from'}.'+where+service+%3D+%27'.$opt{'service'}.'%27+and+time+%3E+now()+-+'.$opt{'minutes'}.'m+order+by+time+desc%3B&db='.$opt{'db'};
 
 print "GET: $client, $query\n\n" if ($opt{'verbose'});
 
