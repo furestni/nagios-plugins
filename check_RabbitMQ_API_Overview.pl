@@ -47,11 +47,10 @@ sub perform_check_redeliver_details_rate () {
 	my $msg = "unknown";
 	my $value;
 
-	my ($http_rc, $data_ref) = fetchData($opt{'server'}, '/api/overview', $opt{'auth'});
+	my ($http_rc, $data_ref) = fetchData($opt{'server'}.":".$opt{'port'}, '/api/overview', $opt{'auth'});
 
 	if (defined($data_ref)) {
 
-		#$data_ref->{'message_stats'}{'redeliver_details'}{'rate'} = "0.1";
 		$value = $data_ref->{'message_stats'}{'redeliver_details'}{'rate'};
 
 		$msg = sprintf "message_stats.redeliver_details.rate=%.1f", $value;
@@ -71,6 +70,7 @@ sub perform_check_redeliver_details_rate () {
 
 GetOptions (
     "server=s"		=> \$opt{'server'},
+	"port=i"        => \$opt{'port'},
     "user=s"		=> \$opt{'user'},
     "pass=s"		=> \$opt{'pass'},
     "auth=s"		=> \$opt{'auth'},
@@ -102,6 +102,10 @@ unless (( (defined($opt{'user'}) && defined($opt{'pass'})) || defined($opt{'auth
 
 unless ($opt{'auth'}) {
         $opt{'auth'} = encode_base64($opt{'user'} . ':' . $opt{'pass'});
+}
+
+unless (defined($opt{'port'})) {
+	$opt{'port'} = 15672; # default
 }
 
 unless (defined($opt{'check'})) {
@@ -140,6 +144,7 @@ check_RabbitMQ_API_Overview.pl -- check Element
 	check_RabbitMQ_API_Overview.pl [options]
 	Options:
 		--server        IP/name of server
+		--port          port number, default 15672
 		--user          user name for authentification
 		--pass          password for authentification
 		--auth          pass-through auth string
@@ -155,6 +160,10 @@ check_RabbitMQ_API_Overview.pl -- check Element
 =item B<--server>
 
 IP/name of Server
+
+=item B<--port>
+
+Port number, default 15672
 
 =item B<--user>
 
