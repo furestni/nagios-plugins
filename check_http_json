@@ -31,6 +31,9 @@ def main():
     warning_found = False
     ok_found = False
     nok_found = False
+    # HACK: allow other types at the root
+    if type(data_list) is dict:
+        data_list = [data_list]
     for data in data_list:
         if key in data:
             if error_value and str(data[key]) == str(error_value):
