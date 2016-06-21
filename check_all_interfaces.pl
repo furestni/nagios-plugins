@@ -37,13 +37,14 @@ use warnings;
 
 # Path to cache files
 # To have multiple checks on the same device change this location and save check_all_interfaces.pl with a new filename.
-use constant CACHE_DIR => "/var/cache/nagios/iferrors";
+use constant CACHE_DIR => "/var/cache/icinga2/iferrors";
 
 use Net::SNMP;
 use Getopt::Long;
 &Getopt::Long::config('bundling');
 
-use constant VERSION => "0.3";
+# some changes for icinga/pnp4nagios perfdata
+use constant VERSION => "0.3.1";
 
 # SNMP OIDs for Errors
 use constant snmpIfInDiscards  => '1.3.6.1.2.1.2.2.1.13';
@@ -235,7 +236,7 @@ close($file);
 # Record performance data
 #
 
-$perf_outtmp.= "inErr=$tot_in_errors, outErr=$tot_out_errors, inDis=$tot_in_discards, outDis=$tot_out_discards";
+$perf_outtmp.= "inErr=$tot_in_errors outErr=$tot_out_errors inDis=$tot_in_discards outDis=$tot_out_discards";
 
 #
 # Print the results found.
@@ -269,7 +270,7 @@ if (@error_intfs) {
 	$last_if = $descr;
     }
     print ", Affected Interfaces: $intfstr";
-	$perf_outtmp.= ", Intface=$intfstrp";
+#	$perf_outtmp.= ", Intface=$intfstrp";
 }
 if (defined($o_perf)) {
 		$perf_output = $perf_outtmp;
