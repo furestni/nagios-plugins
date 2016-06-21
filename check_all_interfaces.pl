@@ -6,14 +6,17 @@
 # Based on check_iferrors.pl, copyright (C) 2004 Gerd Mueller / Netways GmbH
 # based on check_traffic from Adrian Wieczorek, <ads (at) irc.pila.pl>
 #
+# 9/10/2012 by MP - Added OID's to check In/Out Discards.
+# Added performance data using -f option.
+# 
 # Send us bug reports, questions and comments about this plugin.
 # Latest version of this software: http://www.nagiosexchange.org
 #
 # INSTALLATION:
 # Make sure CACHE_DIR exists and is writable by the nagios user.
-#
-# BUGS:
-# You cannot use multiple instances of this check on the same device.
+# You can use multiple instances of this check on the same device
+# by changing the CACHE_DIR location and creating another check file.
+# I.E: check_gig_interfaces.pl
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -33,13 +36,14 @@ use strict;
 use warnings;
 
 # Path to cache files
-use constant CACHE_DIR => "/var/iferrors";
+# To have multiple checks on the same device change this location and save check_all_interfaces.pl with a new filename.
+use constant CACHE_DIR => "/var/cache/nagios/iferrors";
 
 use Net::SNMP;
 use Getopt::Long;
 &Getopt::Long::config('bundling');
 
-use constant VERSION => "0.2";
+use constant VERSION => "0.3";
 
 # SNMP OIDs for Errors
 use constant snmpIfInDiscards  => '1.3.6.1.2.1.2.2.1.13';
@@ -47,7 +51,6 @@ use constant snmpIfInErrors    => '1.3.6.1.2.1.2.2.1.14';
 use constant snmpIfOutDiscards => '1.3.6.1.2.1.2.2.1.19';
 use constant snmpIfOutErrors   => '1.3.6.1.2.1.2.2.1.20';
 use constant snmpIfDescr       => '1.3.6.1.2.1.2.2.1.2';
-
 
 
 # exit values
@@ -70,6 +73,9 @@ my $iface_descr;
 my $opt_h;
 my $port=161;
 my $snmp_version = 2;
+my $o_perf		= undef;	# Output performance data
+my $perf_output	=	"";
+my $perf_outtmp	=	" | ";
 
 usage_and_exit() unless
     GetOptions("h|help"           => \$opt_h,
@@ -79,7 +85,8 @@ usage_and_exit() unless
 	       "p|port=i"         => \$port,
 	       "i|interface=s"    => \$iface_descr,
 	       "H|hostname=s"     => \$host_address,
-	       "v|version=s"      => \$snmp_version
+	       "v|version=s"      => \$snmp_version,
+		   "f|perfdata"		  => \$o_perf    
 	       );
 
 usage_and_exit() if $opt_h or not $host_address;
@@ -224,36 +231,51 @@ for my $iface_number (sort { $a <=> $b} keys %iface_descr) {
     }
 }
 close($file);
+#
+# Record performance data
+#
+
+$perf_outtmp.= "inErr=$tot_in_errors, outErr=$tot_out_errors, inDis=$tot_in_discards, outDis=$tot_out_discards";
 
 #
 # Print the results found.
 #
-
-print($STATUS[$exit_status] . ": Total in Errors: $tot_in_errors, Total out Errors: $tot_out_errors, Total in Discards: $tot_in_discards, Total out Discards: $tot_out_discards | in_errors=$tot_in_errors, out_errors=$tot_out_errors, in_discards=$tot_in_discards, out_discards=$tot_out_discards");
+	
+print($STATUS[$exit_status] . ": Total in errors: $tot_in_errors, Total out errors: $tot_out_errors, Total in discards: $tot_in_discards, Total out discards: $tot_out_discards");
 
 #
 # If errors were found, show on which interfaces in a short way
 # (f.i. errors on FastEthernet 0/1 and 0/5 will be shown as
 # 'FastEthernet0/1, 0/5')
 #
-#if (@error_intfs) {
-#    my $intfstr = $iface_descr{shift @error_intfs};
-#    my $last_if = $intfstr;
-#    for (@error_intfs) {
-#	my $descr = $iface_descr{$_};
-#	my $short = $descr;
-#	# see if there is a common prefix
-#	my ($p1, $p2) = ($descr   =~ /(.*?)([\d\.:\/]+)$/);
-#	my ($q1, $q2) = ($last_if =~ /(.*?)([\d\.:\/]+)$/);
-#	if ($q1 eq $p1) {
-#	    $intfstr .= ", $p2";
-#	} else { 
-#	    $intfstr .= ", $descr";
-#	}
-#	$last_if = $descr;
-#   }
-#    print "Check interface $intfstr";
-#}
+if (@error_intfs) {
+
+    my $intfstr = $iface_descr{shift @error_intfs};
+	my $intfstrp = $intfstr;   
+	my $last_if = $intfstr;
+    for (@error_intfs) {
+	my $descr = $iface_descr{$_};
+	my $short = $descr;
+	# see if there is a common prefix
+	my ($p1, $p2) = ($descr   =~ /(.*?)([\d\.:\/]+)$/);
+	my ($q1, $q2) = ($last_if =~ /(.*?)([\d\.:\/]+)$/);
+	if ($q1 eq $p1) {
+	    $intfstr .= ", $p2";
+	    $intfstrp .= "_$p2";
+	} else {
+	    $intfstr .= ", $descr";
+	    $intfstrp .= "_$descr";
+	}
+	$last_if = $descr;
+    }
+    print ", Affected Interfaces: $intfstr";
+	$perf_outtmp.= ", Intface=$intfstrp";
+}
+if (defined($o_perf)) {
+		$perf_output = $perf_outtmp;
+		print $perf_output
+	}
+
 print "\n";
 
 exit($exit_status);
@@ -277,6 +299,8 @@ sub usage_and_exit
     print "   number of necessary errors since last check to result in warning status (default: 1)\n";
     print " -c --critical INTEGER\n";
     print "   number of necessary errors since last check to result in critical status (default: 5)\n";
+	print " -f, --perfparse\n";
+	print "   Perfparse compatible output\n";
     print " -v --version [1 or 2]\n";
     print "   Snmp version to use, use '2' for version 2c. (default: version 2c).\n";
     
@@ -334,5 +358,4 @@ sub get_iface_descr {
     }
     return %iface_descr;
 }
-
 
