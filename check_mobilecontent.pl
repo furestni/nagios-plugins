@@ -91,8 +91,12 @@ foreach my $e ($dom->find('td')->each) {
 
 foreach my $e (keys(%counter)) {
 	printf "[info] %s: %d\n", $e, $counter{$e}{'count'} if (defined($opt{'verbose'}));
-	push @stat, (sprintf "%s=%d (%s)", $e, $counter{$e}{'count'}, join(',', @{$counter{$e}{'info'}}));
-	push @msg, (sprintf "%s=%d", $e, $counter{$e}{'count'});
+	if ($e eq 'status_ok') {
+		push @stat, (sprintf "%s=%d (%s)", $e, $counter{$e}{'count'}, join(',', @{$counter{$e}{'info'}}));
+		push @msg, (sprintf "%s=%d", $e, $counter{$e}{'count'});
+	} else {
+		push @msg, (sprintf "%s=%d (%s)", $e, $counter{$e}{'count'}, join(',', @{$counter{$e}{'info'}}));
+	}
 }
 
 #
