@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+
+import sys
+import argparse
+import requests
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--host', required=True, help='edge host name')
+    parser.add_argument('--path', required=True, help='stream path')
+    parser.add_argument('--port', default=80, help='HTTP port')
+    args = parser.parse_args()
+
+    host = args.host
+    path = args.path
+    url = "http://{host}:{port}/{path}".format(host=host, port=args.port, path=path)
+
+    # defaults
+    message = ""
+    code = 0
+    stream_online = 0
+
+    try:
+        r = requests.get(url)
+        status = r.status_code
+    except:
+        message = "Node {host} could not be reached".format(host=host)
+        code = 2
+
+    if code == 0:
+        if status == 200:
+            message = "Stream {path} on {host} is up".format(host=host, path=path)
+            stream_online = 1
+            code = 0
+        elif status == 404:
+            message = "Stream {path} on {host} is down".format(host=host, path=path)
+            code = 0
+        else:
+            message = "Stream {path} on {host} is in unknown state".format(host=host, path=path)
+            code = 3
+
+    prefix = ['OK', 'WARNING', 'ERROR', 'UNKNOWN'][code]
+    print("{prefix}: {message} | stream_online={stream_online};;;0;1".format(prefix=prefix, message=message, stream_online=stream_online))
+    sys.exit(code)
+
+if __name__ == "__main__":
+    main()
+
