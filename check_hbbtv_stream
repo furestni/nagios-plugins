@@ -9,6 +9,7 @@ def main():
     parser.add_argument('--host', required=True, help='edge host name')
     parser.add_argument('--path', required=True, help='stream path')
     parser.add_argument('--port', default=80, help='HTTP port')
+    parser.add_argument('--enforce', action='store_true', help='return WARNING if stream is offline')
     args = parser.parse_args()
 
     host = args.host
@@ -34,7 +35,10 @@ def main():
             code = 0
         elif status == 404:
             message = "Stream {path} on {host} is down".format(host=host, path=path)
-            code = 0
+            if args.enforce:
+                code = 1
+            else:
+                code = 0
         else:
             message = "Stream {path} on {host} is in unknown state".format(host=host, path=path)
             code = 3
