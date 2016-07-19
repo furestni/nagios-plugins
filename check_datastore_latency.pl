@@ -64,15 +64,16 @@ EndOfUsage
 # ============================================================================
 
 &app_usage if (!GetOptions (
-		"esx=s"		=>	\$opt_esx,		# --esx
-                "datastore=s"   =>      \$opt_datastore,        # --datastore
-		"w=i"		=>	\$opt_w,		# -w
-		"c=i"		=>	\$opt_c,		# -c
-                "help"          =>      \$opt_help,             # --help
-		"config=s"	=>	\$opt_dummy,
-		"server=s"      =>      \$opt_dummy,
-		"username=s"      =>      \$opt_dummy,
-		"password=s"      =>      \$opt_dummy,
+	"esx=s"       => \$opt_esx,
+	"datastore=s" => \$opt_datastore,
+	"w=i"         => \$opt_w,
+	"c=i"         => \$opt_c,
+	"help"        => \$opt_help,
+	"config=s"    => \$opt_dummy,
+	"server=s"    => \$opt_dummy,
+	"username=s"  => \$opt_dummy,
+	"password=s"  => \$opt_dummy,
+	"debug!"      => \$opt_debug,
 ) or $opt_help );
 
 unless (-f $file_esx_data) {
@@ -85,10 +86,10 @@ unless (defined($esx_data)) {
 	print "NO DATA\n";
 	exit 3;
 }
-#print Dumper $esx_data;
+#print Dumper $esx_data if ($opt_debug);
 
-@list_datastore = split (',', $opt_datastore);
-@list_esx = split (',', $opt_esx);
+@list_datastore = split (/,\s*/, $opt_datastore);
+@list_esx = split (/,\s*/, $opt_esx);
 
 my %latency_values;
 my $host_view;
