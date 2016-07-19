@@ -64,7 +64,7 @@ function checkActuallity
       (touch "$tmppath$i"_"$q" || exit)
       laststate="$(cat "$tmppath"$i"_"$q )"
       url=$url_base$i"_"$q$url_playlist
-      content="$(curl -s "$url")"
+      content="$(curl --compress -s "$url")"
       returncode=$((returncode+$?))
       content="$(echo "$content" | tail -1)"
       if [ "$laststate" == "$content" ]; then
@@ -92,7 +92,7 @@ function checkDVR
   for i in ${stations[@]}; do
     for q in ${qualities[@]}; do
       url=$url_base$i"_"$q$url_playlist
-      content="$(curl -s "$url")"
+      content="$(curl --compress -s "$url")"
       segment_num="$(echo "$content" | grep aac -c)"
       perfdata=$perfdata$delimiter$i"_"$q"="$segment_num
       if [[ $segment_num < 1980  ]]; then
