@@ -9,8 +9,8 @@ function usage {
    echo "usage:"
    echo "-H Host"
    echo "-t [checkDVR|checkActuallity|checkFunctionality]"
-   echo "-w Warning Level in %, default is 70% up"
-   echo "-c Critical Level in %, default is 80% up"
+   echo "-w Warning Level in %, default is $warning% up"
+   echo "-c Critical Level in %, default is $critical% up"
    exit 3
 }
 
@@ -51,14 +51,14 @@ stations=( drs1 drs2 drs3 drs4news drsmw rr drsvirus espace-2 la-1ere option-mus
 qualities=(32 96)
 url_base="http://"$host"/audio/"
 url_playlist=".stream/chunklist_DVR.m3u8"
-tmppath="/tmp/lsaplus/"
+tmppath="/var/cache/icinga2/check_segmenting_status/"
 
 function checkActuallity
 {
   mkdir -p $tmppath
   for i in ${stations[@]}; do
     for q in ${qualities[@]}; do
-      (touch "$tmppath$i"_"$q" || exit )
+      (touch "$tmppath$i"_"$q" || exit 3)
       laststate="$(cat "$tmppath"$i"_"$q )"
       url=$url_base$i"_"$q$url_playlist
       content="$(curl --compress -s -f "$url")"
