@@ -23,6 +23,15 @@ my %checks = (
 my $msg = "?";
 my $rc = 3;
 
+# ----------------------------------------------------------------------------
+# Defaults
+# ----------------------------------------------------------------------------
+$opt{'warnutil'} = 200;
+$opt{'critutil'} = 300;
+$opt{'warnlatency'} = 250;
+$opt{'critlatency'} = 500;
+
+
 # fetch data from server using REST API
 # -------------------------------------
 sub fetchSolidfireData($$$$) {
@@ -91,7 +100,7 @@ sub perform_check_Volume_Stats() {
 
 	if (defined($data_ref) && defined($data_ref2)) {
 
-		if ($opt{'verbose'}) {
+		if ($opt{'verbose'} && $opt{'debug'}) {
 			print Dumper ($data_ref);			
 			print Dumper ($data_ref2);
 		}
@@ -114,7 +123,7 @@ sub perform_check_Volume_Stats() {
 	
 	
 		$msg = sprintf
-			"actualIOPS=%d usedCapacity=%.2f%% volumeUtilization=%.1f%% latency=%.3fms readLatency=%.3fms writeLatency=%.3fms compression=%.3f deduplication=%.3f thinProvisioning=%.3f throttle=%s",
+			"actualIOPS=%d usedCapacity=%.2f%% volumeUtilization=%.1f%% latency=%.3fms readLatency=%.3fms writeLatency=%.3fms compression=%.3f deduplication=%.3f thinProvisioning=%.3f",
 	        $data_ref->{'result'}{'volumeStats'}{'actualIOPS'},
 			100/($data_ref->{'result'}{'volumeStats'}{'volumeSize'}/4096)*$data_ref->{'result'}{'volumeStats'}{'nonZeroBlocks'},
 	        $data_ref->{'result'}{'volumeStats'}{'volumeUtilization'}*100,
@@ -124,7 +133,6 @@ sub perform_check_Volume_Stats() {
 	        $data_ref2->{'result'}{'compression'},
 	        $data_ref2->{'result'}{'deduplication'},
 	        $data_ref2->{'result'}{'thinProvisioning'},
-	        $data_ref->{'result'}{'volumeStats'}{'throttle'}
 			. " | " .
 			sprintf 
 			"actualIOPS=%d usedCapacity=%.2f%% volumeUtilization=%.1f%% latency=%.6fs readLatency=%.6fs writeLatency=%.6fs compression=%.3f deduplication=%.3f thinProvisioning=%.3f throttle=%s", 
@@ -140,7 +148,24 @@ sub perform_check_Volume_Stats() {
 			$data_ref->{'result'}{'volumeStats'}{'throttle'}
 		;
 
+
+		#### Logic for health-checks ####
 		$rc = 0;
+        if ($data_ref->{'result'}{'volumeStats'}{'volumeUtilization'}*100 > $opt{'critutil'}) {
+			$rc = 2;
+			$msg = "Critical volumeUtilization - ".$msg;
+		} elsif ($data_ref->{'result'}{'volumeStats'}{'volumeUtilization'}*100 > $opt{'warnutil'}) {
+			$rc = 1;
+			$msg = "Warning volumeUtilization - ".$msg;
+		}
+		if ($data_ref->{'result'}{'volumeStats'}{'latencyUSec'}/1000 > $opt{'critlatency'}) {
+			$rc = 2;
+			$msg = "Critical latency - ".$msg;
+		} elsif ($data_ref->{'result'}{'volumeStats'}{'latencyUSec'}/1000 > $opt{'warnlatency'}) {
+			$rc = $rc > 1 ? $rc : 1;
+			$msg = "Warning latency - ".$msg;
+		}
+
 	
 	} else {
 		$msg = "Error";
@@ -164,7 +189,12 @@ GetOptions (
     "auth=s"		=> \$opt{'auth'},
     "check=s"		=> \$opt{'check'},
     "param=s"		=> \$opt{'param'},
+    "warnutil=i"    => \$opt{'warnutil'},
+    "critutil=i"    => \$opt{'critutil'},
+    "warnlatency=i" => \$opt{'warnlatency'},
+    "critlatency=i" => \$opt{'critlatency'},
     "verbose"		=> \$opt{'verbose'},
+    "debug"			=> \$opt{'debug'},
     "help|?"		=> \$opt{'help'},
     "man"			=> \$opt{'man'},
 ) or pod2usage(2);
@@ -239,7 +269,12 @@ check_solidfire_api.pl -- check Solidfire using REST API
 		--pass          password for authentification
 		--auth          pass-through auth string
 		--check         name of check to be executed
+		--warnutil		warning level for volumeUtilization
+		--critutil      critical level for volumeUtilization
+		--warnlatency   warning level for latency
+		--critlatency   critical level for latency
 		--verbose       verbose, what else?
+        --debug         add more information (use with --verbose)
 		--help          brief help message
 		--man           full documentation
 
@@ -271,9 +306,29 @@ pass-though auth string
 
 name of check to be executed
 
+=item B<--warnutil>
+
+warning level for volumeUtilization
+
+=item B<--critutil>
+
+critical level for volumeUtilization
+
+=item B<--warnlatency>
+
+warning level for latency
+
+=item B<--critlatency>
+
+critical level for latency
+
 =item B<--verbose>
 
-verbose mode for testing and debugging
+verbose mode for testing
+
+=item B<--debug>
+
+debug mode for testing and debugging, use with --verbose
 
 =item B<--help>
 
