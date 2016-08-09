@@ -11,7 +11,7 @@ def main():
     parser.add_argument('--ok-value', required=True, help='ok value the key should have in json')
     parser.add_argument('--warning-value', help='warning value the key should have in json')
     parser.add_argument('--error-value', help='error value the key should have in json')
-    parser.add_argument('--description', help='print the full json return value with the status message')
+    parser.add_argument('--description', default=False, action='store_true', help='print the full json return value with the status message')
 
     args = parser.parse_args()
 
