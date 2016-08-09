@@ -27,7 +27,7 @@ def main():
     try:
         r = requests.get(url)
         if verbose:
-            description = '| ' + r.text
+            description = 'value: ' + r.text
         data_list = r.json()
     except:
         print "UNKNOWN: URL '%s' could not be reached or did not return json %s" % (url, description)
