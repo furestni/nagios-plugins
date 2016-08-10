@@ -19,7 +19,7 @@ def main():
     key = args.key
     ok_value = args.ok_value
     error_value = args.error_value
-    warning_value = args.error_value
+    warning_value = args.warning_value
     verbose = args.description
 
     description = ''
