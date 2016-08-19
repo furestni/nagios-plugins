@@ -51,7 +51,8 @@ def main():
     headers = {'host': hostname}
     for ip in ips:
         try:
-            r = requests.get(proto +"://"+ip, headers=headers)
+            url = proto + "://" +ip + path
+            r = requests.get(url, headers=headers, timeout=1)
             status_code = r.status_code
             if status_code != 200:
                 errors.append("IP %s HTTP respone was %s" % (ip, status_code))
@@ -62,6 +63,12 @@ def main():
                 content = r.text
                 if body_string in content:
                     success = True
+        except requests.exceptions.Timeout:
+            errors.append("HTTP to %s timed out" % url)
+        except requests.exceptions.TooManyRedirects:
+            errors.append("Too many redirects for %s " % url)
+        except requests.exceptions.RequestException as e:
+            errors.append(str(e))
         except Exception as e:
             errors.append(str(e))
 
