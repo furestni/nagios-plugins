@@ -11,6 +11,7 @@ def main():
     parser.add_argument('--ok-value', required=True, help='ok value the key should have in json')
     parser.add_argument('--warning-value', help='warning value the key should have in json')
     parser.add_argument('--error-value', help='error value the key should have in json')
+    parser.add_argument('--description', default=False, action='store_true', help='print the full json return value with the status message')
 
     args = parser.parse_args()
 
@@ -18,13 +19,18 @@ def main():
     key = args.key
     ok_value = args.ok_value
     error_value = args.error_value
-    warning_value = args.error_value
+    warning_value = args.warning_value
+    verbose = args.description
+
+    description = ''
 
     try:
         r = requests.get(url)
+        if verbose:
+            description = 'value: ' + r.text
         data_list = r.json()
     except:
-        print "UNKNOWN: URL '%s' could not be reached or did not return json" % url
+        print "UNKNOWN: URL '%s' could not be reached or did not return json %s" % (url, description)
         sys.exit(2)
 
     error_found = False
@@ -46,18 +52,18 @@ def main():
                 nok_found = True
 
     if error_found:
-        print "ERROR: Key '%s' with error-value '%s' found on %s" % (key, error_value, url)
+        print "ERROR: Key '%s' with error-value '%s' found on %s %s" % (key, error_value, url, description)
         sys.exit(2)
     elif warning_found:
-        print "ERROR: Key '%s' with warning-value '%s' found on %s" % (key, warning_value, url)
+        print "ERROR: Key '%s' with warning-value '%s' found on %s %s" % (key, warning_value, url, description)
         sys.exit(1)
     elif ok_found:
-        print "OK: Key '%s' with ok-value '%s' found on %s" % (key, ok_value, url)
+        print "OK: Key '%s' with ok-value '%s' found on %s %s" % (key, ok_value, url, description)
     elif nok_found:
-        print "ERROR: Key '%s' is not ok on %s" %  (key, url)
+        print "ERROR: Key '%s' is not ok on %s %s" %  (key, url, description)
         sys.exit(2)
     else:
-        print "UNKNOWN: Key '%s' not found or ok_value '%s' or error_value '%s' not found on %s" % (key, ok_value, error_value, url)
+        print "UNKNOWN: Key '%s' not found or ok_value '%s' or error_value '%s' not found on %s %s" % (key, ok_value, error_value, url, description)
         sys.exit(3)
 
 if __name__ == "__main__":
