@@ -1211,7 +1211,7 @@ sub datastore_volumes_info
 
 				if ($usedflag)
 				{
-					$value1 = simplify_number(convert_number($store->summary->capacity) / 1024 / 1024) - $value1;
+					$value1 = simplify_number((convert_number($store->summary->capacity) / 1024 / 1024) - $value1);
 					$value2 = simplify_number(100 - $value2);
 				}
 
