@@ -23,6 +23,9 @@ import argparse
 import requests
 import dns.resolver
 
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings()
+
 def get_ip_addresses(hostname):
     results = []
     answers = dns.resolver.query(hostname, 'A')
