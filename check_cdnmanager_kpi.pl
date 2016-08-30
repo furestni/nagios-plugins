@@ -112,10 +112,15 @@ if ($opt{'verbose'}) {
 my $ts = $kpi->{'results'}[0]{'series'}[0]{'values'}[0][0];
 my $value = $kpi->{'results'}[0]{'series'}[0]{'values'}[0][1];
 
-printf "TS = %s\nValue = %s\n" , $ts, $value if ($opt{'verbose'});
+printf "TS = %s\nValue = %s\n" , defined($ts) ? $ts : "undef", defined($value) ? $value : "undef" if ($opt{'verbose'});
 
 my $rc = 3;
 my $msg = "UNKNOWN";
+
+# seams to return empty result if no match, not 0 / timestamp
+$value = 0 unless (defined($value));
+$ts = $opt{'minutes'}." minutes" unless (defined($ts));
+
 
 if ($value < $opt{'critical'}) {
 	$msg = "Critical: $value entries found since $ts\n";
