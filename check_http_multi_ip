@@ -1,0 +1,97 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# (c) 2016, René Moser <rene.moser@swisstxt.ch>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.#
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import print_function
+
+import sys
+import argparse
+import requests
+import dns.resolver
+
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings()
+
+def get_ip_addresses(hostname):
+    results = []
+    answers = dns.resolver.query(hostname, 'A')
+    for a in answers:
+        results.append(str(a))
+    return results
+
+def main():
+    parser = argparse.ArgumentParser(description='checks HTTP but uses every IP the hostname resovles to')
+    parser.add_argument('--proto', default='http', help='Protocol to be used, default http.')
+    parser.add_argument('--hostname', required=True, help='hostname e.g. www.example.com')
+    parser.add_argument('--path', default="/", help='path e.g. /path/to, default /.')
+    parser.add_argument('--string', help='look for string in HTTP response body')
+
+    args = parser.parse_args()
+
+    proto = args.proto
+    hostname = args.hostname
+    path = args.path
+    body_string = args.string
+
+    ips = get_ip_addresses(hostname)
+
+    errors = []
+    success = False
+    headers = {'host': hostname}
+    for ip in ips:
+        try:
+            url = proto + "://" +ip + path
+            r = requests.get(url, headers=headers, timeout=1)
+            status_code = r.status_code
+            if status_code != 200:
+                errors.append("IP %s HTTP respone was %s" % (ip, status_code))
+                continue
+            if not body_string:
+                success = True
+            else:
+                content = r.text
+                if body_string in content:
+                    success = True
+        except requests.exceptions.Timeout:
+            errors.append("HTTP to %s timed out" % url)
+        except requests.exceptions.TooManyRedirects:
+            errors.append("Too many redirects for %s " % url)
+        except requests.exceptions.RequestException as e:
+            errors.append(str(e))
+        except Exception as e:
+            errors.append(str(e))
+
+    if not success:
+        if errors:
+            print("ERROR: %s" % ', '.join(errors))
+        else:
+            print("ERROR: string '%s' not found in HTTP response on any of the following IPs %s" % (body_string, ','.join(ips)))
+        sys.exit(2)
+    else:
+        if errors:
+            print("WARNING: %s" % ', '.join(errors))
+            sys.exit(1)
+        else:
+            print("OK: ALL GOOD")
+            sys.exit(0)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        print("UNKNOWN: %s" % str(e))
+        sys.exit(3)
