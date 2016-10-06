@@ -14,6 +14,7 @@ use Data::Dumper;
 # ---
 my $opt_esx;
 my $opt_datastore;
+my $opt_filename;
 my $opt_w;
 my $opt_c;
 my $opt_help;
@@ -27,7 +28,7 @@ my @list_esx;				# Array of ESX
 my $opt_debug = 0;			# to show or not to show: debugging messages
 my $esx_data;                           # datastructure for esx-data
 my $file_esx_data = "/tmp/esx-data.dat"; # file name for esx data 
-
+my $file_path = "/var/cache/icinga2/vcenter_data/"; # ensure this path exists with correct permissions
 
 # ---
 # --- Subroutines
@@ -50,6 +51,7 @@ sub app_usage {
         print STDERR <<EndOfUsage;
 --esx host,...,host	List of ESX hosts to query
 --datastore 		List of Datastores to query
+--filename          File containing cached data from get_vcenter_data.pl
 -w                      Warning in ms
 -c                      Critical in ms
 
@@ -66,6 +68,7 @@ EndOfUsage
 &app_usage if (!GetOptions (
 	"esx=s"       => \$opt_esx,
 	"datastore=s" => \$opt_datastore,
+    "filename=s"  => \$opt_filename,
 	"w=i"         => \$opt_w,
 	"c=i"         => \$opt_c,
 	"help"        => \$opt_help,
@@ -76,8 +79,12 @@ EndOfUsage
 	"debug!"      => \$opt_debug,
 ) or $opt_help );
 
+if (defined($opt_filename)) {
+	$file_esx_data = $file_path.$opt_filename;
+}
+
 unless (-f $file_esx_data) {
-	print "no datafile found\n";
+	printf "datafile %s not found\n", $file_esx_data;
 	exit 3;
 }
 
