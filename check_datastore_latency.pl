@@ -86,7 +86,16 @@ unless (defined($esx_data)) {
 	print "NO DATA\n";
 	exit 3;
 }
-#print Dumper $esx_data if ($opt_debug);
+print Dumper $esx_data if ($opt_debug);
+
+unless (defined($opt_esx) && defined($opt_datastore)) {
+	print "--esx is required " unless (defined($opt_esx));
+	print "--datastore is required " unless (defined($opt_datastore));
+	print "\n";
+	exit 3;
+}
+
+
 
 @list_datastore = split (/,\s*/, $opt_datastore);
 @list_esx = split (/,\s*/, $opt_esx);
