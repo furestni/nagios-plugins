@@ -11,7 +11,6 @@ use VMware::VILib;
 use Time::HiRes qw( time );
 use List::Util qw( sum );
 use Storable qw (lock_store);
-
 # ---
 # --- Global Variables
 # ---
@@ -19,7 +18,13 @@ my $t0;					# for timing purposes only
 my $exit_code = -1;
 my @exit_txt = qw (OK WARNING CRITICAL UNKNOWN);
 my @get_status = ();
-my %opts = (); 				# Define additional options
+my %opts = (
+   'filename' => {
+      type => "=s",
+      help => "Name of file to hold output",
+      required => 0,
+   },
+); 				# Define additional options
 my $host_view;				# All ESX hosts object
 my $perfmgr_view;			# Global performance manager object
 my $host_ref;				# reference to one ESX host object
@@ -28,7 +33,7 @@ my $perf_data;				# reference to performance data object
 my $opt_debug = 0;			# to show or not to show: debugging messages
 my %esx_data;				# datastructure for esx-data
 my $file_esx_data = "/tmp/esx-data.dat"; # file name for esx data 
-
+my $file_path = "/var/cache/icinga2/vcenter_data/"; # ensure this path exists with correct permissions
 # ---
 # --- Subroutines
 # ---
@@ -54,7 +59,6 @@ sub genPerfMetricIdArray() {
 Opts::add_options(%opts);
 Opts::parse();
 Opts::validate();
-
 Util::connect();
 
 $t0 = time();
@@ -137,6 +141,9 @@ foreach $host_ref (@$host_view) {
 
 lock_store \%esx_data, "$file_esx_data";
 
+if (defined(Opts::get_option('filename'))) {
+	lock_store \%esx_data, "$file_path".Opts::get_option('filename');
+}
 
 $exit_code = 3 if ($exit_code < 0); # set to unknown if exit_code was not changed
 push (@get_status, "");
