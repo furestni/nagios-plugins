@@ -29,6 +29,8 @@ my $host_view;				# All ESX hosts object
 my $perfmgr_view;			# Global performance manager object
 my $host_ref;				# reference to one ESX host object
 my @perf_metric_ids;			# array of performance metrics filter objects
+my @perf_metric_ids_51;		# ... for version 5.1
+my @perf_metric_ids_55;		# ... for version 5.5
 my $perf_data;				# reference to performance data object
 my $opt_debug = 0;			# to show or not to show: debugging messages
 my %esx_data;				# datastructure for esx-data
@@ -41,11 +43,10 @@ sub avg	{
 	return sum(@_)/@_;
 }
 
-
-sub genPerfMetricIdArray() {
-	# no options
+sub genPerfMetricIdArray(@) {
+    my @ids = @_;
 	my @a;
-	foreach (qw/144 145/) { # @@@ use 182 183 if 144 145 does not work. How to switch automatically?
+	foreach (@ids) {
 		push @a,PerfMetricId->new (counterId => $_, instance => '*');
 	}
 	return @a;
@@ -71,12 +72,19 @@ $perfmgr_view = Vim::get_view(mo_ref => Vim::get_service_content()->perfManager)
 printf ("[INFO] get perfmgr_view: %.3fs\n", time()-$t0) if ($opt_debug);
 
 $t0 = time();
-@perf_metric_ids = genPerfMetricIdArray();
+@perf_metric_ids_51 = genPerfMetricIdArray(qw(144 145));
+@perf_metric_ids_55 = genPerfMetricIdArray(qw(182 183));
 printf ("[INFO] generate filter object: %.3fs\n", time()-$t0) if ($opt_debug);
 
 foreach $host_ref (@$host_view) {
 
 	printf "[INFO] Processing ESX host %s (%s)\n", $host_ref->name, $host_ref->summary->config->product->fullName if ($opt_debug); 
+
+	if ($host_ref->summary->config->product->fullName =~ m/ESXi 5\.5/) {
+		@perf_metric_ids = @perf_metric_ids_55;
+	} else {
+		@perf_metric_ids = @perf_metric_ids_51;
+	}
 
 	my $perf_query_spec = PerfQuerySpec->new(	entity => $host_ref,
 							metricId => \@perf_metric_ids,
@@ -123,7 +131,7 @@ foreach $host_ref (@$host_view) {
 				}
 			}
 			printf "%s --- %s --- %s --- %s \n",
-				$v_ref->id->counterId eq "144" ? 'Read latency' : 'Write latency',
+				(($v_ref->id->counterId eq "144") || ($v_ref->id->counterId eq "182")) ? 'Read latency' : 'Write latency',
 				$v_ref->id->instance, 
 				$dsname,
 				$v_ref->value if ($opt_debug);
