@@ -37,15 +37,15 @@ sub avg	{
 	return sum(@_)/@_;
 }
 
-
-sub genPerfMetricIdArray() {
-	# no options
-	my @a;
-	foreach (qw/144 145/) { # @@@ use 182 183 if 144 145 does not work. How to switch automatically?
-		push @a,PerfMetricId->new (counterId => $_, instance => '*');
-	}
-	return @a;
-}
+#
+#sub genPerfMetricIdArray() {
+#	# no options
+#	my @a;
+#	foreach (qw/144 145/) { # @@@ use 182 183 if 144 145 does not work. How to switch automatically?
+#		push @a,PerfMetricId->new (counterId => $_, instance => '*');
+#	}
+#	return @a;
+#}
 
 sub app_usage {
         print STDERR <<EndOfUsage;
@@ -125,7 +125,7 @@ foreach my $esx_key (@list_esx) {
 	foreach my $ds_key (@list_datastore) {
 		foreach my $p_key (sort(keys(%{$esx_data->{$esx_key}{'datastore'}{$ds_key}}))) {
 			printf "%s --- %s --- %s --> %8.3f\n",
-				$p_key eq "144" ? 'Read latency' : 'Write latency',
+				(($p_key eq "144") || ($p_key eq "182")) ? 'Read latency' : 'Write latency',
 				$ds_key,
 				$esx_data->{$esx_key}{'datastore'}{$ds_key}{$p_key},
 				avg(split(',', $esx_data->{$esx_key}{'datastore'}{$ds_key}{$p_key})) if ($opt_debug);
@@ -151,7 +151,7 @@ my @i_status;
 
 foreach my $l_ref (sort(keys(%latency_values))) {
 	$average_latency = avg(split(',',$latency_values{$l_ref}));
-	$latency_type = $l_ref eq "144" ? 'Read' : 'Write';
+	$latency_type = (($l_ref eq "144") || ($l_ref eq "182")) ? 'Read' : 'Write';
 
 
 	printf "%s --- %s --- %s --> %8.3f\n",
