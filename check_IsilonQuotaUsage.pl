@@ -24,13 +24,14 @@ my $rc = 3;
 
 # fetch data from isilon using REST API
 # -------------------------------------
-sub fetchData($$$) {
-    my ($isilon, $path, $auth) = @_;
+sub fetchData($$$$) {
+    my ($isilon, $path, $auth, $debug) = @_;
     my $headers = {Accept => 'application/json', Authorization => 'Basic ' . $auth};
     my $client = REST::Client->new({ host => $isilon });
 
     $client->GET($path, $headers);
 
+	print $client->responseCode,"\n",$client->responseContent(),"\n" if ($debug);
     return (
         $client->responseCode,
         $client->responseCode == 200 ? from_json($client->responseContent()) : undef
@@ -50,10 +51,12 @@ GetOptions (
     "path=s"		=> \$opt{'path'},
     "c|critical=i"	=> \$opt{'critical'},
     "w|warning=i"	=> \$opt{'warning'},
+    "a|advisory=i"  => \$opt{'advisory'},
     "verbose"		=> \$opt{'verbose'},
+    "debug" 		=> \$opt{'debug'},
     "help|?"		=> \$opt{'help'},
     "man"			=> \$opt{'man'},
-) or pos2usage(2);
+) or pod2usage(2);
 
 pod2usage(1) if $opt{'help'};
 pod2usage(-exitval => 0, -verbose => 2) if $opt{'man'};
@@ -87,7 +90,8 @@ $opt{'critical'} = 90 unless (defined($opt{'critical'}));
 
 # input checks
 # ------------
-foreach (qw(warning critical)) {
+foreach (qw(warning critical advisory)) {
+	next unless defined($opt{$_});
 	if (($opt{$_} < 0) || ($opt{$_} > 100)) {
 		print $_." has to be between 0 and 100\n";
 		exit 3;
@@ -106,7 +110,7 @@ unless ($opt{'auth'}) {
 # get the data
 # ------------
 
-$quota_ref = fetchData($opt{'isilon'}, '/platform/1/quota/quotas', $opt{'auth'});
+$quota_ref = fetchData($opt{'isilon'}, '/platform/1/quota/quotas', $opt{'auth'}, $opt{'debug'});
 
 if (defined($quota_ref)) {
 
@@ -121,9 +125,20 @@ if (defined($quota_ref)) {
 		if ((defined($k->{'thresholds'}{'hard'})) || (defined($k->{'thresholds'}{'soft'}))) {
 			my $limit = defined($k->{'thresholds'}{'hard'}) ? $k->{'thresholds'}{'hard'} : $k->{'thresholds'}{'soft'};
 			if ($limit > 0) {
+				# set the warning and critial according to advisory limit (if defined)
+				if (defined ($k->{'thresholds'}{'advisory'}) && defined($opt{'advisory'})) {
+					$opt{'warning'} = 100 / $limit * $k->{'thresholds'}{'advisory'};
+					$opt{'critical'} = 100 / $limit * ($k->{'thresholds'}{'advisory'} + (($limit - $k->{'thresholds'}{'advisory'}) * ($opt{'advisory'} / 100)));
+					if (defined($opt{'verbose'})) {
+						printf "Advisory: Quota=%.1f GB AdvisoryQuota=%.1f GB Delta=%.1f GB\n", $limit/1024/1024/1024, $k->{'thresholds'}{'advisory'}/1024/1024/1024, ($limit-$k->{'thresholds'}{'advisory'})/1024/1024/1024 ;
+						printf "Advisory: warning=%.4f%% critical=%.4f%%\n", $opt{'warning'}, $opt{'critical'};
+					}
+				}
 				my $usagePct = 100 / $limit * $k->{'usage'}{'logical'};
-				$msg = sprintf "used=%5.1f%%, limit=%.1f GB, used=%.1f GB, free=%.1f GB | used=%.1f%% QuotaTotal=%dB QuotaUsage=%dB QuotaFree=%dB",
+				$msg = sprintf "used=%.1f%% (w:%.1f%% c:%.1f%%), limit=%.1f GB, used=%.1f GB, free=%.1f GB | used=%.1f%% QuotaTotal=%dB QuotaUsage=%dB QuotaFree=%dB",
 					$usagePct,
+					$opt{'warning'},
+					$opt{'critical'},
 					$limit/1024/1024/1024,
 					$k->{'usage'}{'logical'}/1024/1024/1024,
 					($limit - $k->{'usage'}{'logical'})/1024/1024/1024,
@@ -143,7 +158,7 @@ if (defined($quota_ref)) {
 		}
 	}
 } else {
-   $msg = "something went wrong while fetching data from the REST API...";
+   $msg = "something went wrong while fetching data from the Isilon REST API...";
    $rc = 3;
 }
 
@@ -172,9 +187,11 @@ check_IsilonQuotaUsage.pl -- check Isilon Quota Usage using the REST API
 		--pass          password for authentification
 		--auth          pass-though auth string
 		--path          path of quota to be checked
-		--critical      in percent for critical level
-		--warning       in percent for warning level
+		--critical=n    n in percent for critical level
+		--warning=n     n in percent for warning level
+		--advisory=n    use advisory limit for warning and n to calculate critical
 		--verbose       verbose, what else?
+		--debug         show REST API output
 		--help          brief help message
 		--man           full documentation
 
@@ -210,9 +227,23 @@ integer value between 0 and 100 in percent for critical level - must be above wa
 
 integer value between 0 and 100 in percent for warning level - must be below critical level. Default is 80.
 
+=item B<--advisory n>
+
+Use the advisory limit defined in the Quota settings on the Isilon to dynamically calculate the warning and critical percentage. n is a value between 0 and 100 in percent for critical level calculation:
+
+Dynamic warning level: The advisory limit itself is used to calculate the warning level.
+
+Dynamic critical level: The delta of hard limit and advisory limit is taken into consideration. If this delta is used more than n% this is considered critical.
+
+If no advisory limit is set on the isilon (e.g. soft quota) this option is ignored and the levels given with --warning and --critial or the defaults are used.
+
 =item B<--verbose>
 
-verbose mode for testing and debugging
+verbose mode - shows some more information.
+
+=item B<--debug>
+
+debug mode for prining REST output
 
 =item B<--help>
 
@@ -227,6 +258,7 @@ Prints the manual page and exits.
 =head1 DESCRIPTION
 
 B<icheck_IsilonQuotaUsage.pl> get the quota information from the Isilon using the REST API and perform some check for warning and critial usage levels.
+Optionally the advisory limit set on Isilon Smart Quotas can be used to have a more flexible trigger level.
 
 =cut
 
