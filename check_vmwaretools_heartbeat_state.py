@@ -44,6 +44,14 @@ def get_args():
                         action='store_true',
                         help="verbosity", default=False)
 
+    parser.add_argument('-w', '--warning',
+                        help="warning threshold in percent", default=10)
+
+
+    parser.add_argument('-c', '--critical',
+                        help="critical threshold in percent", default=30)
+
+
     args = parser.parse_args()
     if args.password is None:
         args.password = getpass.getpass(
@@ -86,6 +94,9 @@ def check():
     vms = []
     tools_not_running = 0
     tools_not_installed = 0
+
+    total_vms = len(vmList)
+
     for vm in vmList:
         if vm.runtime.powerState == "poweredOn" and vm.guestHeartbeatStatus.lower() != "green":
             if args.verbose:
@@ -97,18 +108,29 @@ def check():
                 elif vm.guest.toolsStatus == "toolsNotInstalled":
                     tools_not_installed += 1
 
-    if not vms :
+    percent_critical = (total_vms / 100 * int(args.critical))
+    percent_warning = (total_vms / 100 * int(args.warning))
+
+
+    if not vms:
         return 0, "OK: all green | vmware_tools_heartbeat_vms_amount=0"
 
-    elif vms:
+    else:
         vms_string = ','.join(vms)
         if args.verbose:
             for vm in vms:
                 print vm
             return 0, ""
+        elif percent_critical < len(vms):
+            return 2, "CRITICAL: %s (>%s%%) of VMs bad vmware tools heartbeat status | vmware_tools_heartbeat_vms_amount=%s vmware_tools_not_running=%s vmware_tools_not_installed=%s" \
+                        % (len(vms), percent_critical, len(vms), tools_not_running, tools_not_installed)
+        elif percent_warning < len(vms):
+            return 1, "WARNING: %s (>%s%%) VMs bad vmware tools heartbeat status | vmware_tools_heartbeat_vms_amount=%s vmware_tools_not_running=%s vmware_tools_not_installed=%s" \
+                        % (len(vms), percent_warning, len(vms), tools_not_running, tools_not_installed)
+
         else:
-            return 1, "WARNING: %s VMs bad vmware tools heartbeat status: %s ... | vmware_tools_heartbeat_vms_amount=%s vmware_tools_not_running=%s vmware_tools_not_installed=%s" \
-                        % (len(vms), vms_string, len(vms), tools_not_running, tools_not_installed)
+            return 0, "OK: %s VMs bad vmware tools heartbeat status | vmware_tools_heartbeat_vms_amount=%s vmware_tools_not_running=%s vmware_tools_not_installed=%s" \
+                        % (len(vms), len(vms), tools_not_running, tools_not_installed)
 def main():
 
     (exitcode, out) = check()
