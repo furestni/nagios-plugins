@@ -1,0 +1,81 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# (c) 2016, René Moser <rene.moser@swisstxt.ch>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.#
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import print_function
+
+import sys
+import argparse
+import requests
+
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings()
+
+
+def main():
+    parser = argparse.ArgumentParser(description='checks HTTP but uses every IP the hostname resovles to')
+    parser.add_argument('--url', required=True, help='Status URL')
+    parser.add_argument('--backend', required=True, help='Upstream backend name')
+    parser.add_argument('--timeout', type=int, default=10, help='HTTP timeout in seconds')
+
+    args = parser.parse_args()
+
+    url = args.url
+    backend = args.backend
+    timeout = args.timeout
+
+    down_servers = []
+    up_servers = []
+
+    r = requests.get(url)
+    data = r.json()
+    servers_dict = data.get('servers')
+
+    servers = servers_dict.get('server', [])
+    if not servers:
+        print("No servers")
+        sys.exit(3)
+
+    for server in servers:
+        if server.get('upstream') != backend:
+            continue
+        if server.get('status') != "up":
+            down_servers.append(server['name'])
+        else:
+            up_servers.append(server['name'])
+
+    total_servers = len(down_servers) + len(up_servers)
+
+    if down_servers and up_servers:
+        print("WARNING: %s of %s upstreams DOWN for backend %s: %s" % (len(down_servers), total_servers, backend, ', '.join(down_servers)))
+        sys.exit(1)
+    elif down_servers:
+        print("CRITICAL: %s of %s upstreams DOWN for backend %s: %s" % (len(down_servers), total_servers, backend, ', '.join(down_servers)))
+        sys.exit(2)
+    elif not up_servers:
+        print("CRITICAL: %s of %s upstreams UP for backend %s: %s" % (len(up_servers), total_servers, backend, ', '.join(down_servers)))
+        sys.exit(2)
+    else:
+        print("Ok: ALL %s upstreams UP for backend %s: %s" % (len(up_servers), backend, ', '.join(up_servers)))
+        sys.exit(0)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        print("UNKNOWN: %s" % str(e))
+        sys.exit(3)
