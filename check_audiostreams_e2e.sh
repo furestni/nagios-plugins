@@ -130,7 +130,7 @@ if [ "$type" == "icecast" ]; then
 #/m/drs_event/aacp_96 \
 #/m/drs_event/mp3_128 \
 #
- 
+
 elif [ "$type" == "wowza" ]; then
    stream_list="\
    /live/drs2.32.stream \
@@ -208,7 +208,7 @@ do
    fi
 done
 
-echo "Stream Statistics OK: $okcount, Warning: $wrncount, Error: $errcount, Unknown: $unkncount"
+echo "Stream Statistics: $okcount, Warning: $wrncount, Error: $errcount, Unknown: $unkncount | ok=$okcount warning=$wrncount error=$errcount unknown=$unkncount"
 
 if [ "$errcount" -gt "0" ]; then
    exit 2
