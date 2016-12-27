@@ -52,7 +52,7 @@ do
 done
 
 for i in ${host//,/ } ; do
-  if ssh root@$i $sshoptions -C 'find /vmfs/volumes/PerfPlus* -follow -maxdepth 1' > /dev/null ; then
+  if ssh root@$i $sshoptions -C 'find /vmfs/volumes/*[pP]erf[pP]lus* -follow -maxdepth 1' > /dev/null ; then
     okcount=$((okcount+1))
   else
     errorcount=$((errorcount+1))
