@@ -2,7 +2,7 @@
 # ============================================================================
 # check_RabbitMQ_API_Overview.pl
 # ------------------------------
-# 01.06.2016 Michael Pospiezsynski, SWISS TXT 
+# 01.06.2016 Michael Pospiezsynski, SWISS TXT
 # ============================================================================
 use REST::Client;
 use JSON;
@@ -18,8 +18,8 @@ use strict;
 # ----------------------------------------------------------------------------
 my %opt;
 my %checks = (
-				'redeliver_details_rate', \&perform_check_redeliver_details_rate,
-			 );
+        'redeliver_details_rate', \&perform_check_redeliver_details_rate,
+       );
 my $msg = "?";
 my $rc = 3;
 
@@ -30,7 +30,7 @@ sub fetchData($$$) {
     my $headers = {Accept => 'application/json', Authorization => 'Basic ' . $auth};
     my $client = REST::Client->new({ host => $server });
 
-	printf ("Server: %s\nHeader:\n%s\nPath:   %s\n", $server, Dumper $headers, $path) if ($opt{'verbose'});
+  printf ("Server: %s\nHeader:\n%s\nPath:   %s\n", $server, Dumper $headers, $path) if ($opt{'verbose'});
     $client->GET($path, $headers);
 
     return (
@@ -43,24 +43,24 @@ sub fetchData($$$) {
 # --------------------
 sub perform_check_redeliver_details_rate () {
 
-	my $rc = 3;
-	my $msg = "unknown";
-	my $value;
+  my $rc = 3;
+  my $msg = "unknown";
+  my $value;
 
-	my ($http_rc, $data_ref) = fetchData($opt{'server'}.":".$opt{'port'}, '/api/overview', $opt{'auth'});
+  my ($http_rc, $data_ref) = fetchData($opt{'server'}.":".$opt{'port'}, '/api/overview', $opt{'auth'});
 
-	if (defined($data_ref)) {
+  if (defined($data_ref)) {
 
-		$value = $data_ref->{'message_stats'}{'redeliver_details'}{'rate'};
+    $value = $data_ref->{'message_stats'}{'redeliver_details'}{'rate'};
 
-		$msg = sprintf "message_stats.redeliver_details.rate=%.1f", $value;
-		$rc = ($value > 0) ? 2 : 0;	# check is critical if condition is true
-	} else {
-	   $msg = "something went wrong while fetching data from the REST API... rc=".$http_rc;
-	   $rc = 3;
-	}
+    $msg = sprintf "message_stats.redeliver_details.rate=%.1f|redeliver_rate=%.1f", $value,$value;
+    $rc = ($value > $opt{'critical'}) ? 2 : ($value > $opt{'warning'}) ? 1 : 0;  # check if critical or warning condition is true
+  } else {
+     $msg = "something went wrong while fetching data from the REST API... rc=".$http_rc;
+     $rc = 3;
+  }
 
-	return ($rc, $msg);
+  return ($rc, $msg);
 }
 
 
@@ -69,15 +69,17 @@ sub perform_check_redeliver_details_rate () {
 ########
 
 GetOptions (
-    "server=s"		=> \$opt{'server'},
-	"port=i"        => \$opt{'port'},
-    "user=s"		=> \$opt{'user'},
-    "pass=s"		=> \$opt{'pass'},
-    "auth=s"		=> \$opt{'auth'},
-    "check=s"		=> \$opt{'check'},
-    "verbose"		=> \$opt{'verbose'},
-    "help|?"		=> \$opt{'help'},
-    "man"			=> \$opt{'man'},
+    "server=s"        => \$opt{'server'},
+    "port=i"          => \$opt{'port'},
+    "user=s"          => \$opt{'user'},
+    "pass=s"          => \$opt{'pass'},
+    "auth=s"          => \$opt{'auth'},
+    "check=s"         => \$opt{'check'},
+    "critical=i|c=i"  => \$opt{'critical'},
+    "warning=i|w=i"   => \$opt{'warning'},
+    "verbose"         => \$opt{'verbose'},
+    "help|?"          => \$opt{'help'},
+    "man"             => \$opt{'man'},
 ) or pod2usage(2);
 
 #
@@ -105,19 +107,19 @@ unless ($opt{'auth'}) {
 }
 
 unless (defined($opt{'port'})) {
-	$opt{'port'} = 15672; # default
+  $opt{'port'} = 15672; # default
 }
 
 unless (defined($opt{'check'})) {
-	print "--check is required\n";
-	exit 3;
+  print "--check is required\n";
+  exit 3;
 } elsif (! grep  { $opt{'check'} eq $_ } keys %checks) {
-	print "selected check is not implemented.\n";
-	exit 3;
+  print "selected check is not implemented.\n";
+  exit 3;
 } else {
-	printf "run check: %s\n", $opt{'check'} if ($opt{'verbose'});
+  printf "run check: %s\n", $opt{'check'} if ($opt{'verbose'});
 
-	($rc, $msg) = &{$checks{$opt{'check'}}};
+  ($rc, $msg) = &{$checks{$opt{'check'}}};
 
 
 }
@@ -141,17 +143,17 @@ check_RabbitMQ_API_Overview.pl -- check Element
 
 =head1 SYNOPSIS
 
-	check_RabbitMQ_API_Overview.pl [options]
-	Options:
-		--server        IP/name of server
-		--port          port number, default 15672
-		--user          user name for authentification
-		--pass          password for authentification
-		--auth          pass-through auth string
-		--check         name of check to be executed
-		--verbose       verbose, what else?
-		--help          brief help message
-		--man           full documentation
+  check_RabbitMQ_API_Overview.pl [options]
+  Options:
+    --server        IP/name of server
+    --port          port number, default 15672
+    --user          user name for authentification
+    --pass          password for authentification
+    --auth          pass-through auth string
+    --check         name of check to be executed
+    --verbose       verbose, what else?
+    --help          brief help message
+    --man           full documentation
 
 =head1 OPTIONS
 
@@ -199,4 +201,3 @@ Prints the manual page and exits.
 
 B<check_RabbitMQ_API_Overview.pl> execute the specified check and server using he REST API
 =cut
-
