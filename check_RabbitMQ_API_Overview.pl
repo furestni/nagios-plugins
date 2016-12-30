@@ -17,6 +17,8 @@ use strict;
 # Global Vars
 # ----------------------------------------------------------------------------
 my %opt;
+$opt{'warning'} = 0; # default
+$opt{'critical'} = 1; # default
 my %checks = (
         'redeliver_details_rate', \&perform_check_redeliver_details_rate,
        );
@@ -75,8 +77,8 @@ GetOptions (
     "pass=s"          => \$opt{'pass'},
     "auth=s"          => \$opt{'auth'},
     "check=s"         => \$opt{'check'},
-    "critical=i|c=i"  => \$opt{'critical'},
-    "warning=i|w=i"   => \$opt{'warning'},
+    "critical|c=i"    => \$opt{'critical'},
+    "warning|w=i"     => \$opt{'warning'},
     "verbose"         => \$opt{'verbose'},
     "help|?"          => \$opt{'help'},
     "man"             => \$opt{'man'},
