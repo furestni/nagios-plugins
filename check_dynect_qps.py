@@ -15,6 +15,7 @@ __version__ = "0.1"
 baseurl = "https://api.dynect.net/"
 offset = 30
 
+
 ######################################################################
 # print version
 ######################################################################
@@ -22,32 +23,34 @@ def version():
     p = "{0} v{1}\n".format(__program__, __version__)
     sys.stdout.write(p)
 
+
 ######################################################################
 # read opts
 ######################################################################
 def getopts():
-  program = os.path.basename(sys.argv[0])
+    program = os.path.basename(sys.argv[0])
 
-  usg = "{0} [options]".format(program)
-  parser = OptionParser(usage=usg)
+    usg = "{0} [options]".format(program)
+    parser = OptionParser(usage=usg)
 
-  parser.add_option("-c", "--customer", dest="customer",
-                    action="store", type="string",
-                    help="customer name",
-                    metavar="CUSTOMERNAME")
-  parser.add_option("-u", "--user", dest="user",
-                    action="store", type="string",
-                    help="user name",
-                    metavar="USERNAME")
-  parser.add_option("-p", "--pass", dest="password",
-                    action="store", type="string",
-                    help="password",
-                    metavar="PASSWORD")
-  parser.add_option("-t", "--time", dest="time",
-                    action="store", type="int", default=5,
-                    help="timerange in minutes",
-                    metavar="TIME")
-  return parser
+    parser.add_option("-c", "--customer", dest="customer",
+                      action="store", type="string",
+                      help="customer name",
+                      metavar="CUSTOMERNAME")
+    parser.add_option("-u", "--user", dest="user",
+                      action="store", type="string",
+                      help="user name",
+                      metavar="USERNAME")
+    parser.add_option("-p", "--pass", dest="password",
+                      action="store", type="string",
+                      help="password",
+                      metavar="PASSWORD")
+    parser.add_option("-t", "--time", dest="time",
+                      action="store", type="int", default=5,
+                      help="timerange in minutes",
+                      metavar="TIME")
+    return parser
+
 
 ######################################################################
 # login
@@ -55,17 +58,20 @@ def getopts():
 def login(customer, user, password):
     try:
         url = baseurl + "REST/Session/"
-        data = {'customer_name' : customer,
-                      'user_name' : user,
-                       'password' : password }
-        headers = { 'Content-Type': 'application/json' }
-        r = requests.post(url, data = json.dumps(data), headers = headers)
+        data = {
+            'customer_name': customer,
+            'user_name': user,
+            'password': password
+        }
+        headers = {'Content-Type': 'application/json'}
+        r = requests.post(url, data=json.dumps(data), headers=headers)
         body = r.json()
         token = body['data']['token']
     except Exception as e:
         sys.stdout.write("ERROR: url: %s %s " % (url, str(body)))
         sys.exit(3)
     return token
+
 
 ######################################################################
 # fetch qps report link
@@ -79,8 +85,8 @@ def fetch_qps_report_ressource(token, timegap):
     try:
         url = baseurl + "REST/QPSReport/"
         data = {
-            'start_ts' : start_ts,
-            'end_ts' : end_ts
+            'start_ts': start_ts,
+            'end_ts': end_ts
         }
         headers = {
             'Content-Type': 'application/json',
@@ -94,6 +100,7 @@ def fetch_qps_report_ressource(token, timegap):
         sys.exit(3)
     return report
 
+
 ######################################################################
 # fetch qps report
 ######################################################################
@@ -104,7 +111,7 @@ def extract_latest_qps(report):
     ts = 0
     qps = 0
 
-    reader = csv.reader(report.split('\n') , delimiter=',')
+    reader = csv.reader(report.split('\n'), delimiter=',')
 
     for ir, row in enumerate(reader):
         # get the column indexes of timestamp and qps
@@ -128,6 +135,7 @@ def extract_latest_qps(report):
 
     return qps
 
+
 ######################################################################
 # execute
 ######################################################################
@@ -141,6 +149,7 @@ def main():
 
     sys.stdout.write("Current QPS: {0} | qps={0}".format(qps))
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
