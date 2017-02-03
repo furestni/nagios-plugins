@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 import os
 import csv
@@ -63,8 +63,7 @@ def login(customer, user, password):
         body = r.json()
         token = body['data']['token']
     except Exception as e:
-        import traceback
-        sys.stdout.write("ERROR: API <a href=\"{0}\" target=\"_blank\">{0}</a> could not log in".format(url))
+        sys.stdout.write("ERROR: url: %s %s " % (url, str(body)))
         sys.exit(3)
     return token
 
@@ -79,33 +78,19 @@ def fetch_qps_report_ressource(token, timegap):
     start_ts = time.mktime(start.timetuple())
     try:
         url = baseurl + "REST/QPSReport/"
-        data = { 'start_ts' : start_ts,
-                   'end_ts' : end_ts }
-        headers = { 'Content-Type': 'application/json',
-                      'Auth-Token': token }
-        r = requests.post(url, data = json.dumps(data), headers = headers)
-        # this only returns a redirect to a resource that does not allow
-        # post requests
-        ressource = r.url
-    except Exception as e:
-        import traceback
-        sys.stdout.write("ERROR: API <a href=\"{0}\" target=\"_blank\">{0}</a> could not get report ressource".format(url))
-        sys.exit(3)
-    return ressource
-
-######################################################################
-# fetch qps report
-######################################################################
-def fetch_qps_report(token, url):
-    try:
-        headers = { 'Content-Type': 'application/json',
-                      'Auth-Token': token }
-        r = requests.get(url, headers = headers)
+        data = {
+            'start_ts' : start_ts,
+            'end_ts' : end_ts
+        }
+        headers = {
+            'Content-Type': 'application/json',
+            'Auth-Token': token
+        }
+        r = requests.post(url, data=json.dumps(data), headers=headers)
         body = r.json()
         report = body['data']['csv']
     except Exception as e:
-        import traceback
-        sys.stdout.write("ERROR: API <a href=\"{0}\" target=\"_blank\">{0}</a> could not get report".format(url))
+        sys.stdout.write("ERROR: url: %s %s " % (url, str(body)))
         sys.exit(3)
     return report
 
@@ -130,8 +115,8 @@ def extract_latest_qps(report):
                 elif col.lower() == "queries":
                     qps_index = ic
         elif len(row) > 0:
-            ts_temp = row[ts_index]
-            qps_temp = row[qps_index]
+            ts_temp = int(row[ts_index])
+            qps_temp = int(row[qps_index])
             if ts_temp > ts:
                 ts = ts_temp
                 qps = qps_temp
@@ -151,8 +136,7 @@ def main():
     (options, args) = parser.parse_args()
 
     token = login(options.customer, options.user, options.password)
-    report_ressource = fetch_qps_report_ressource(token, options.time)
-    report = fetch_qps_report(token, report_ressource)
+    report = fetch_qps_report_ressource(token, options.time)
     qps = extract_latest_qps(report)
 
     sys.stdout.write("Current QPS: {0} | qps={0}".format(qps))
