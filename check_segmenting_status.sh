@@ -4,13 +4,16 @@ okcount=0
 errorcount=0
 warning=80
 critical=70
+quality=96
 
 function usage {
    echo "usage:"
    echo "-H Host"
+   echo "-q Quality"
    echo "-t [checkDVR|checkActuallity|checkFunctionality]"
    echo "-w Warning Level in %, default is $warning% up"
    echo "-c Critical Level in %, default is $critical% up"
+   echo "-q Quality, default is $default_quality"
    exit 3
 }
 
@@ -20,7 +23,7 @@ if (($# == 0)); then
 fi
 
 # Catch Arguments
-while getopts ":H:t:w:c:" optname
+while getopts ":H:q:t:w:c:" optname
 do
   case "$optname" in
     "t")
@@ -28,6 +31,9 @@ do
       ;;
     "H")
       host=$OPTARG
+      ;;
+    "q")
+      quality=$OPTARG
       ;;
     "w")
       warning=$OPTARG
@@ -48,7 +54,7 @@ do
 done
 
 stations=( drs1 drs2 drs3 drs4news drsmw rr drsvirus espace-2 la-1ere option-musique regi_ag_so regi_bs_bl regi_be_fr_vs regi_ost regi_zentr regi_zh_sh rsj rsp rsc_de rsc_fr rsc_it reteuno retedue retetre couleur3 drs_event rts_event rsi_event rr_event regi_gr )
-qualities=(32 96)
+qualities=($quality)
 url_base="http://"$host"/audio/"
 url_playlist=".stream/chunklist_DVR.m3u8"
 tmppath="/var/cache/icinga2/check_segmenting_status/"
