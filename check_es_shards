@@ -6,12 +6,11 @@ import json
 import sys
 
 parser = argparse.ArgumentParser(description='Get Java Heap Usage of Elasticsearch Server')
-parser.add_argument('-v','--version'  , action='version', version='%(prog)s 0.1')
-parser.add_argument('-s','--server'   , action='store',   help='fqdn server address of elasticsearch server',required=True)
-parser.add_argument('-p','--port'     , action='store',   help='listen port of elasticsearch server',default=9200,type=int)
-parser.add_argument('-t','--trim'     , action='store',   help='condition of shard to check from. can be: PRIMARY | STARTED | RELOCATING | INITIALIZING | UNASSIGNED',required=True)
-parser.add_argument('-w','--warning'  , action='store',   help='set the warning level',type=int,required=True)
-parser.add_argument('-c','--critical' , action='store',   help='set the critical level',type=int,required=True)
+parser.add_argument('-v','--version', action='version', version='%(prog)s 0.2')
+parser.add_argument('-s','--server', action='store', help='fqdn server address of elasticsearch server',required=True)
+parser.add_argument('-p','--port', action='store', help='listen port of elasticsearch server',default=9200,type=int)
+parser.add_argument('-w','--warning', action='store', help='set the warning level',type=int,required=True)
+parser.add_argument('-c','--critical', action='store', help='set the critical level',type=int,required=True)
 
 options = parser.parse_args()
 
@@ -19,6 +18,7 @@ server_fqdn = options.server
 server      = server_fqdn.split('.')[0]
 port        = options.port
 url         = "http://" + server_fqdn + ":" + str(port) + "/_search_shards"
+
 
 try:
   response = requests.get(url)
@@ -28,53 +28,44 @@ except:
 
 data = response.json()
 
-cnt = 0
+active_primary = 0
+active = 0
+relocating = 0
+initializing = 0
+unassigned = 0
+
+for i in range(0, len(data['shards'])):
+  for j in range(0, len(data['shards'][i])):
+    if data['shards'][i][j]['primary'] == True:
+      active_primary += 1
+
+    if data['shards'][i][j]['state'] == "STARTED":
+      active += 1
+
+    if data['shards'][i][j]['state'] == "RELOCATING":
+      relocating += 1
+
+    if data['shards'][i][j]['state'] == "INITIALIZING":
+      initializing += 1
+
+    if data['shards'][i][j]['state'] == "UNASSIGNED":
+      unassigned += 1
+
 ret = 3
-if options.trim == 'PRIMARY':
-  ret = 2
-  for i in range(0, len(data['shards'])):
-    for j in range(0, len(data['shards'][i])):
-      if data['shards'][i][j]['primary'] == True:
-        cnt += 1
-  
-if options.trim == 'STARTED':
-  ret = 2
-  for i in range(0, len(data['shards'])):
-    for j in range(0, len(data['shards'][i])):
-      if data['shards'][i][j]['state'] == "STARTED":
-        cnt += 1
-
-if options.trim == 'RELOCATING':
-  ret = 2
-  for i in range(0, len(data['shards'])):
-    for j in range(0, len(data['shards'][i])):
-      if data['shards'][i][j]['state'] == "RELOCATING":
-        cnt += 1
-
-if options.trim == 'INITIALIZING':
-  ret = 2
-  for i in range(0, len(data['shards'])):
-    for j in range(0, len(data['shards'][i])):
-      if data['shards'][i][j]['state'] == "INITIALIZING":
-        cnt += 1
-
-if options.trim == 'UNASSIGNED':
-  ret = 2
-  for i in range(0, len(data['shards'])):
-    for j in range(0, len(data['shards'][i])):
-      if data['shards'][i][j]['state'] == "UNASSIGNED":
-        cnt += 1
-
-if ret != 3:
-  if options.warning < cnt:
-    ret = 1
-    if options.critical < cnt:
-      ret = 2
-  else:
-    ret = 0  
+if options.warning < active:
+  ret = 1
+  if options.critical < active:
+    ret = 2
+else:
+  ret = 0  
 
 prefix = ['OK', 'WARNING', 'CRITICAL', 'UNKNOWN'][ret]
-## 'label'=value[UOM];[warn];[crit];[min];[max]  # UOM = Unit of Measure
-print("{prefix} | shards_found={cnt};{warn};{crit};0;".format(prefix=prefix, cnt=cnt, warn=options.warning, crit=options.critical))
+## 'label'=value[UOM];[warn];[crit];[min];[max]
+a = "shards_started={active};{warn};{crit};0;".format(warn=options.warning, crit=options.critical, active=active)
+b = "shards_primary={prim}".format(prim=active_primary)
+c = "shards_relocating={reloc}".format(reloc=relocating)
+d = "shards_initializing={init}".format(init=initializing)
+e = "shards_unassigned={unas}".format(unas=unassigned)
+print( prefix + " | " + a + " " + b + " " + c + " " + d + " " + e)
 
 sys.exit(ret)
