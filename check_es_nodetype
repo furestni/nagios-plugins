@@ -1,0 +1,58 @@
+#!/usr/bin/python
+
+import argparse
+import requests
+import json
+import sys
+
+parser = argparse.ArgumentParser(description='Get Number of Node Type from the Elasticsearch Cluster')
+parser.add_argument('-v','--version', action='version', version='%(prog)s 0.1')
+parser.add_argument('-s','--server', action='store', help='fqdn server address of elasticsearch server',required=True)
+parser.add_argument('-p','--port', action='store', help='listen port of elasticsearch server',default=9200,type=int)
+
+options = parser.parse_args()
+
+server_fqdn = options.server
+server      = server_fqdn.split('.')[0]
+port        = options.port
+url         = "http://" + server_fqdn + ":" + str(port) + "/_nodes/stats"
+
+
+try:
+  response = requests.get(url)
+except:
+  print("UNKNOWN")
+  sys.exit(3)
+
+data = response.json()
+
+master_node = 0
+data_node = 0
+ingest_node = 0
+ 
+for s in data['nodes']:
+  for i in range(0, len(data['nodes'][s]['roles'])):
+    if data['nodes'][s]['roles'][i] == 'master':
+      master_node += 1
+    if data['nodes'][s]['roles'][i] == 'data':
+      data_node += 1
+    if data['nodes'][s]['roles'][i] == 'ingest':
+      ingest_node += 1
+
+
+ret = 3
+if data_node == 0:
+  ret = 2
+elif data_node < 2:
+  ret = 1
+else:
+  ret = 0
+
+prefix = ['OK', 'WARNING', 'CRITICAL', 'UNKNOWN'][ret]
+# 'label'=value[UOM];[warn];[crit];[min];[max]
+a = "master_nodes={master}".format(master=master_node)
+b = "data_node={data}".format(data=data_node)
+c = "ingest_node={ingest}".format(ingest=ingest_node)
+print( prefix + " | " + a + " " + b + " " + c)
+
+sys.exit(ret)
