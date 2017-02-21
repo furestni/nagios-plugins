@@ -3,6 +3,7 @@
 import sys
 import argparse
 import requests
+import urlparse
 
 def main():
     parser = argparse.ArgumentParser()
@@ -14,7 +15,7 @@ def main():
 
     host = args.host
     path = args.path
-    url = "http://{host}:{port}/{path}".format(host=host, port=args.port, path=path)
+    url = urlparse.urljoin("http://{host}:{port}".format(host=host, port=args.port), path)
 
     # defaults
     message = ""
