@@ -6,12 +6,15 @@ import requests
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--host', required=True, help='edge host name')
+    parser.add_argument('--host', required=True, help='Edge host name')
+    parser.add_argument('--bwlimit', default=1024, help='Network bandwidth limit (MiBit/s, default 1GiBit/s)')
 
     args = parser.parse_args()
 
     host = args.host
     url = "http://{host}/health".format(host=host)
+    # MiBit/s -> Byte/s
+    bwlimit = args.bwlimit * 1024 * 1024 / 8
 
     # defaults
     message = ""
@@ -19,6 +22,8 @@ def main():
     viewer = 'U'
     limit = 0
     bandwidth = 'U'
+    warnpercent = 0.85
+    errorpercent = 0.95
 
     try:
         r = requests.get(url)
@@ -52,7 +57,7 @@ def main():
 
     prefix = ['OK', 'WARNING', 'ERROR', 'UNKNOWN'][code]
     # TODO critical viewer limit and max should not be hardcoded
-    print("{prefix}: {message} | viewer={viewer};{limit};1000 bandwidth={bandwidth}".format(prefix=prefix, message=message, viewer=viewer, limit=limit, bandwidth=bandwidth))
+    print("{prefix}: {message} | viewer={viewer};{wlimit};{elimit} bandwidth={bandwidth};{wbw};{ebw}".format(prefix=prefix, message=message, viewer=viewer, wlimit=int(limit * warnpercent),  elimit=int(limit * errorpercent), bandwidth=bandwidth, wbw=int(bwlimit * warnpercent), ebw=int(bwlimit * errorpercent)))
     sys.exit(code)
 
 if __name__ == "__main__":
