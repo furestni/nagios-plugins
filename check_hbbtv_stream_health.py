@@ -7,14 +7,14 @@ import requests
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--host', required=True, help='Edge host name')
-    parser.add_argument('--bwlimit', default=1024, help='Network bandwidth limit (MiBit/s, default 1GiBit/s)')
+    parser.add_argument('--ifspeed', default=1024, help='Network interface speed (MiBit/s, default 1GiBit/s)')
 
     args = parser.parse_args()
 
     host = args.host
     url = "http://{host}/health".format(host=host)
     # MiBit/s -> Byte/s
-    bwlimit = args.bwlimit * 1024 * 1024 / 8
+    bwlimit = int(args.ifspeed) * 1024 * 1024 / 8
 
     # defaults
     message = ""
@@ -22,8 +22,8 @@ def main():
     viewer = 'U'
     limit = 0
     bandwidth = 'U'
-    warnpercent = 0.85
-    errorpercent = 0.95
+    warnpercent = 0.9
+    errorpercent = 1.0
 
     try:
         r = requests.get(url)
