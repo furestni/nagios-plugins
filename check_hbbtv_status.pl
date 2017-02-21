@@ -45,4 +45,5 @@ if ($state == 3){ $state_name = "Unknown" ; last SELECT; }
 
 print "State: " . $state_name . " Name: " . $name . " Description: " . $desc . "\n";
 
-exit $state;
+#exit $state;
+exit 0;
