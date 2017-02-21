@@ -27,8 +27,8 @@ def main():
         status = str(data['status']).lower()
         viewer = int(data['viewer'])
         limit = int(data['limit'])
-        # Nagios expects KiByte/s, but we have KiBit/s
-        bandwidth = "{}KB".format(int(data['bandwidth']) / 8)
+        # Nagios expects Bytes, but we have KiBit/s
+        bandwidth = "{}B".format(int(data['bandwidth']) * 1024 / 8)
     except:
         message = "Node {host} could not be reached or did not return valid json".format(host=host)
         code = 2
