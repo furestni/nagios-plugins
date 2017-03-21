@@ -8,12 +8,14 @@ import datetime
 import time
 import requests
 from optparse import OptionParser
+from urllib.parse import urljoin
 
 __program__ = "check_dynect_qps"
 __version__ = "0.1"
 
 baseurl = "https://api.dynect.net/"
 offset = 30
+poll = 1
 
 
 ######################################################################
@@ -57,7 +59,7 @@ def getopts():
 ######################################################################
 def login(customer, user, password):
     try:
-        url = baseurl + "REST/Session/"
+        url = urljoin(baseurl, "/REST/Session/")
         data = {
             'customer_name': customer,
             'user_name': user,
@@ -82,8 +84,9 @@ def fetch_qps_report_ressource(token, timegap):
     end_ts = time.mktime(end.timetuple())
     start = end - datetime.timedelta(minutes=timegap)
     start_ts = time.mktime(start.timetuple())
+    body = {}
     try:
-        url = baseurl + "REST/QPSReport/"
+        url = urljoin(baseurl, "/REST/QPSReport/")
         data = {
             'start_ts': start_ts,
             'end_ts': end_ts
@@ -92,8 +95,22 @@ def fetch_qps_report_ressource(token, timegap):
             'Content-Type': 'application/json',
             'Auth-Token': token
         }
-        r = requests.post(url, data=json.dumps(data), headers=headers)
-        body = r.json()
+        s = requests.Session()
+        # Do not allow redirects - Dyn responds with a 307 redirect to /REST/Job/<n>
+        # when the job is not complete after 5s, but the job API does not support POST. Duh.
+        r = s.post(url, data=json.dumps(data), headers=headers, allow_redirects=False)
+        if r.is_redirect:
+            redirect = urljoin(baseurl, r.headers['location'])
+            loop = True
+            while loop:
+                r = s.get(redirect, headers=headers, allow_redirects=False)
+                body = r.json()
+                if body['status'] != 'incomplete':
+                    loop = False
+                else:
+                    time.sleep(poll)
+        else:
+            body = r.json()
         report = body['data']['csv']
     except Exception as e:
         sys.stdout.write("ERROR: url: %s %s " % (url, str(body)))
