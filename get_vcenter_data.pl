@@ -81,7 +81,11 @@ foreach $host_ref (@$host_view) {
 	printf "[INFO] Processing ESX host %s (%s)\n", $host_ref->name, $host_ref->summary->config->product->fullName if ($opt_debug); 
 
 	if ($host_ref->summary->config->product->fullName =~ m/ESXi 5\.5/) {
-		@perf_metric_ids = @perf_metric_ids_55;
+		if ($host_ref->summary->config->product->fullName =~ m/Build/) {
+			@perf_metric_ids = @perf_metric_ids_55;
+		} else {
+			@perf_metric_ids = @perf_metric_ids_51;
+		}
 	} else {
 		@perf_metric_ids = @perf_metric_ids_51;
 	}
