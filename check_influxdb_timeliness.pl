@@ -154,7 +154,7 @@ if ($value < $opt{'critical'}) {
 	$msg = "Critical: $value entries found since $ts\n";
 	$rc = 2;
 } elsif ($value < $opt{'warning'}) {
-	$msg = "Warning: $value entires found since $ts\n";
+	$msg = "Warning: $value entries found since $ts\n";
 	$rc = 1;
 } else {
 	$msg ="OK: $value entries found since $ts\n";
