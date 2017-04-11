@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+from __future__ import print_function
+import os
+import sys
+import argparse
+from datetime import datetime, timedelta
+
+
+class BackupCheck(object):
+
+    def __init__(self, path, warning_minutes, critical_minutes):
+        self.warning_minutes = warning_minutes
+        self.critical_minutes = critical_minutes
+        self.path = path
+
+    def check(self):
+        filelist = os.listdir(self.path)
+        if not filelist:
+            print("CRITICAL: no backups found in %s" % self.path)
+            sys.exit(2)
+
+        for name in filelist:
+            subpath = os.path.join(self.path, name)
+            if os.path.isfile(subpath) and subpath.endswith('gz'):
+                file_age = datetime.fromtimestamp(os.path.getctime(subpath))
+
+                cricial_age = datetime.now() - timedelta(minutes=self.critical_minutes)
+                if file_age < cricial_age:
+                    print("CRITICAL: File %s is older than %s minutes" % (subpath, self.critical_minutes))
+                    sys.exit(2)
+
+                warning_age = datetime.now() - timedelta(minutes=self.warning_minutes)
+                if file_age < warning_age:
+                    print("WARNING: File %s is older than %s minutes" % (subpath, self.warning_minutes))
+                    sys.exit(1)
+            else:
+                print("WARNING: a non valid backup found in %s" % self.path)
+                sys.exit(1)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--path', default="/data/backup/latest", help="Path latest backups of automysqlbackup")
+    parser.add_argument('--warning-minutes', default=60 * 24, type=int, help="Warning age of backups in mintues")
+    parser.add_argument('--critical-minutes', default=60 * 24 * 2, type=int, help="Critical age of backups in mintues")
+    args = parser.parse_args()
+
+    backup = BackupCheck(
+        path=args.path,
+        warning_minutes=args.warning_minutes,
+        critical_minutes=args.critical_minutes,
+    )
+    backup.check()
+    print("OK: all backups hopefully okay")
+
+
+if __name__ == "__main__":
+    main()
