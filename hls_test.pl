@@ -17,9 +17,10 @@
 use warnings;
 use strict;
 
-use LWP::Simple qw($ua getstore);
+use LWP::UserAgent;
 use File::Temp qw(tempfile);
 use Getopt::Long;
+#use Data::Dumper;
 
 ##### Config
 
@@ -28,6 +29,15 @@ use Getopt::Long;
 our $PL_HEADER = qr(#EXTM3U$); # MUST be first line in a valid playlist
 our $PL_PATTERN = '\.m3u(8)?$'; # pattern to identifie a child playlist
 our $SEG_IDENTIFIER = '^#EXTINF:\d+(\.\d+)?,(.*)$'; # segement identifier
+
+### Options
+our %OPTIONS = (
+	'url' => undef,
+	'timeout' => 0.5,
+	'verbose' => undef,
+	'tmpdir' => undef,
+	'help' => undef,
+);
 
 ##### Functions
 
@@ -73,16 +83,19 @@ sub create_tempfile($) {
 # Download playlist and save it to a file
 sub get_playlist($$$) {
 
-	my $resp_code; # HTTP-Response code
+	my $response; # HTTP-Response code
 	my $url = $_[0];
 	my $file = $_[1];
 	my $timeout = $_[2];
 	
+	my $ua = LWP::UserAgent->new();
+
+	$ua->ssl_opts( 'verify_hostname' => 1 );
 	$ua->timeout($timeout);
 	
-	$resp_code = $ua->get($url, ':content_file' => $file );
+	$response = $ua->get($url, ':content_file' => $file );
 
-	return($resp_code);
+	return($response);
 }
 
 # Parses a playlist
@@ -99,64 +112,55 @@ sub parse_playlist($) {
 		print("ERROR: Playlist header does not match HLS specifications!\n");
 		return(1);
 	}
-	#while ( my $line = <$pl> ) {
-	#	
-	#}
+	
+	if ( defined( $OPTIONS{'verbose'} ) ) {
+		while ( my $line = <$pl> ) {
+			print($line);	
+		}
+	}
 }
 
 ##### Main
 sub main(@) {
 
 	my $err_code;
-	my $http_ret_code;
+	my $lwp_resp;
 	my %tempfile;
 
-	# default options
-	my %options = (
-		'url' => undef,
-		'timeout' => 0.01,
-		'verbose' => undef,
-		'tmpdir' => undef,
-        'help' => undef,
-	);
+	GetOptions(\%OPTIONS, 'url|u=s', 'verbose|v', 'timeout|t=f', 'd|tmpdir=s', 'h|help' ) || die();
 
-	GetOptions(\%options, 'url|u=s', 'verbose|v', 't|timeout=f', 'd|tmpdir=s', 'h|help' ) || die();
-
-	if( $options{'help'} ) {
+	if( $OPTIONS{'help'} ) {
 		usage();
 		return(3);
 	}
 
-	if( !defined($options{'url'}) ) {
+	if( !defined($OPTIONS{'url'}) ) {
 		usage();
 		return(3);
-	}elsif ( $options{'url'} =~ m/^https/ ) {
-		print("ERROR: SSL (HTTPS) is not supported at the moment.\n");
-		return(1);	
 	}
 
-	print("DEBUG: Creating tempfile...\n") if ( $options{'verbose'} );
-	( $err_code, $tempfile{'fh'}, $tempfile{'name'} ) = create_tempfile($options{'tmpdir'}); # LWP::Simple::get() cannot handle a FH.
+	print("DEBUG: Creating tempfile...\n") if ( $OPTIONS{'verbose'} );
+	( $err_code, $tempfile{'fh'}, $tempfile{'name'} ) = create_tempfile($OPTIONS{'tmpdir'}); # LWP::Simple::get() cannot handle a FH.
 	if( $err_code != 0 ) {
 		print("ERROR: Could not create tempfile..\n");
 		return(3);
 	}
 
-	print("DEBUG: Downloading playlist...\n") if ( $options{'verbose'} );
-	$http_ret_code = get_playlist($options{'url'}, $tempfile{'name'}, $options{'timeout'});
+	print("DEBUG: Downloading playlist...\n") if ( $OPTIONS{'verbose'} );
+	$lwp_resp = get_playlist($OPTIONS{'url'}, $tempfile{'name'}, $OPTIONS{'timeout'});
 
 	# read timeout
-	if ( $http_ret_code->status_line =~ m/500 read timeout/ ) {
+	if ( $lwp_resp->status_line =~ m/500 read timeout/ ) {
 		print("ERROR: Request timed out!\n");
 		return(1);
 	}
 	# everything else
-	if( $http_ret_code->is_error ) {
-		print("ERROR: Could not download playlist @ $options{'url'}. Error was: " . $http_ret_code->status_line . ".\n");
+	if( $lwp_resp->is_error ) {
+		print("ERROR: Could not download playlist @ $OPTIONS{'url'}. Error was: " . $lwp_resp->status_line . ".\n");
 		return(1)
 	}
 
-	print("INFO: Parsing playlist...\n") if ( $options{'verbose'} );
+	print("INFO: Parsing playlist...\n") if ( $OPTIONS{'verbose'} );
 	$err_code = parse_playlist($tempfile{'fh'});
 	if($err_code != 0 ){
 		print("ERROR: Playlist is not valid!\n");
