@@ -77,7 +77,7 @@ def build_query(volumekey, time):
 {
     "size": 0,
     "query": {
-        "filtered": {
+        "bool": {
             "filter": {
                 "bool": {
                     "must": [
