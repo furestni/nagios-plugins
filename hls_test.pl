@@ -179,7 +179,7 @@ sub main(@) {
 	( $err_code, my $parse_msg )  = parse_playlist($tempfile{'fh'});
 
 	if( $err_code != $ICINGA_RET_CODES{'OK'}  ){
-		printf("%s|$OPTIONS{'perflabel'}=%6f\n", $parse_msg, $lwp_req_time);
+		printf("%s|$OPTIONS{'perflabel'}=%6fs\n", $parse_msg, $lwp_req_time);
 		return($err_code); # icinga2 error code already resolved in function
 	}
 	
@@ -187,10 +187,10 @@ sub main(@) {
 	# now check if it took too long
 	
 	if( $lwp_req_time >= $OPTIONS{'maxtime'} ) {
-		printf("ERROR: Request time was %6f seconds.|%s=%6f\n", $lwp_req_time, $OPTIONS{'perflabel'}, $lwp_req_time );
+		printf("ERROR: Request time was %6f seconds.|%s=%6fs\n", $lwp_req_time, $OPTIONS{'perflabel'}, $lwp_req_time );
 		return($ICINGA_RET_CODES{'ERROR'});
 	}else{		
-		printf("OK: Request time was %6f seconds.|%s=%6f\n", $lwp_req_time, $OPTIONS{'perflabel'}, $lwp_req_time );
+		printf("OK: Request time was %6f seconds.|%s=%6fs\n", $lwp_req_time, $OPTIONS{'perflabel'}, $lwp_req_time );
 		return($ICINGA_RET_CODES{'OK'});
 	}
 
