@@ -6,19 +6,16 @@ import json
 import urllib2
 from optparse import OptionParser
 
+
 __program__ = "check_elasticsearch_cluster_size"
-__version__ = "0.1"
 
-######################################################################
-# print version
-######################################################################
-def version():
-    p = "{0} v{1}\n".format(__program__, __version__)
-    sys.stdout.write(p)
 
-######################################################################
-# read opts
-######################################################################
+STATUS_OK = 0
+STATUS_WARNING = 1
+STATUS_CRITICAL = 2
+STATUS_UNKNOWN = 3
+
+
 def getopts():
   program = os.path.basename(sys.argv[0])
 
@@ -33,77 +30,58 @@ def getopts():
                     action="store", type="int", default=9200,
                     help="port of elaticsearch server",
                     metavar="PORT")
-  parser.add_option("-e", "--elasticsearch-id", dest="esid",
-                    action="store", type="string", default="elasticsearch",
-                    help="substring that identifies the names of the elasticsearch instances in the cluster",
-                    metavar="ES_ID")
-  parser.add_option("-c", "--elasticsearch-count", dest="escount",
-                    action="store", type="int", default=5,
-                    help="count of elaticsearch servers",
-                    metavar="ES_COUNT")
-  parser.add_option("-l", "--logstash-id", dest="lsid",
-                    action="store", type="string", default="logstash",
-                    help="substring that identifies the names of the logstash instances in the cluster",
-                    metavar="LS_ID")
-  parser.add_option("-k", "--logstash-count", dest="lscount",
-                    action="store", type="int", default=5,
-                    help="count of logstash instances",
-                    metavar="LS_COUNT")
+  parser.add_option("-c", "--minimum-count", dest="minimum_count",
+                    action="store", type="int", default=4,
+                    help="Expected count of active Elasticsearch instances",
+                    metavar="MINIMUM_COUNT")
+
   return parser
 
-######################################################################
-# fetch api
-######################################################################
-def fetch(url):
+
+def get_elasticsearch_instances(baseurl):
+    url = baseurl + "_cluster/state/nodes"
     try:
         response = urllib2.urlopen(url).read()
         data = json.loads(response)
     except Exception:
         import traceback
         sys.stdout.write("ERROR: API <a href=\"{0}\" target=\"_blank\">{0}</a> could not be queried".format(url))
-        sys.exit(3)
-    return data
+        sys.exit(STATUS_UNKNOWN)
 
-######################################################################
-# get logstash instances
-######################################################################
-def get_instances(nodes, identifier):
-    instances = {}
-    for node in nodes["nodes"].iteritems():
-        if identifier in node[1]["name"]:
-            instances[node[1]["name"]] = node[0]
-    return instances
+    instances = []
+    for node in data["nodes"].iteritems():
+        instances.append(node[1]["name"])
 
-######################################################################
-# execute
-######################################################################
+    return sorted(instances)
+
+
 def main():
+    out = ""
+    exitcode = STATUS_UNKNOWN
+
     parser = getopts()
     (options, args) = parser.parse_args()
 
     baseurl = "http://" + options.servername + ":" + str(options.port) + "/"
+    es_instances = get_elasticsearch_instances(baseurl)
+    es_count = len(es_instances)
 
-    url = baseurl + "_cluster/state/nodes"
-    nodes = fetch(url)
+    gap = options.minimum_count - es_count
+    if gap <= 0:
+        exitcode = STATUS_OK
+        out = "Enough active instances: {} ({})".format(es_count, ", ".join(es_instances))
+    else:
+        if gap == 1:
+            # One node can temporarily fail (e.g. during a deployment rollout)
+            exitcode = STATUS_WARNING
+        else:
+            exitcode = STATUS_CRITICAL
+        out = "NOT enough active instances: {} ({})".format(es_count, ", ".join(es_instances))
 
-    ls_instances = get_instances(nodes, options.lsid)
-    es_instances = get_instances(nodes, options.esid)
+    ## Performance indicators: 'label'=value[UOM];[warn];[crit];[min];[max]
+    perf_data = " | active={ok};{warn};{crit};0;".format(ok=es_count, warn=options.minimum_count-1, crit=options.minimum_count-2)
 
-    out = ""
-    exitcode = 0
-
-    if len(ls_instances) < options.lscount:
-        out = "There are logstash instances missing, we only have: " + ", ".join(ls_instances) + ". " + str(options.lscount) + " instances are expected!\n"
-        exitcode = 1
-
-    if len(es_instances) < options.escount:
-        out = "There are elasticsearch instances missing, we only have: " + ", ".join(es_instances) + ". " + str(options.escount) + " instances are expected!\n"
-        exitcode = 1
-
-    if exitcode == 0:
-        out = "Enough instances of everything!"
-
-    sys.stdout.write(out)
+    sys.stdout.write(out + perf_data + "\n")
     sys.exit(exitcode)
 
 if __name__ == "__main__":
