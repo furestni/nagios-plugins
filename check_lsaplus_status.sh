@@ -95,6 +95,7 @@ function checkDVR
       content="$(curl --compress -s "$url")"
       segment_num="$(echo "$content" | grep aac -c)"
       perfdata=$perfdata$delimiter$i"_"$q"="$segment_num
+	  echo "${i}_${q}: $segment_num" 1>&2
       if [[ $segment_num < 1980  ]]; then
         error=$((error+1))
       fi
