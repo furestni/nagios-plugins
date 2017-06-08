@@ -63,7 +63,7 @@ Opts::validate();
 Util::connect();
 
 $t0 = time();
-$host_view = Vim::find_entity_views(view_type => 'HostSystem');
+$host_view = Vim::find_entity_views(view_type => 'HostSystem', properties => [ 'name', 'runtime.inMaintenanceMode', 'summary', 'config.fileSystemVolume']);
 printf ("[INFO] find_entity_views HostSystem: %.3fs\n", time()-$t0) if ($opt_debug);
 
 
@@ -80,12 +80,8 @@ foreach $host_ref (@$host_view) {
 
 	printf "[INFO] Processing ESX host %s (%s)\n", $host_ref->name, $host_ref->summary->config->product->fullName if ($opt_debug); 
 
-	if ($host_ref->summary->config->product->fullName =~ m/ESXi 5\.5/) {
-		if ($host_ref->summary->config->product->fullName =~ m/Build/) {
+	if ($host_ref->summary->config->product->fullName =~ m/ESXi 6\.5/) {
 			@perf_metric_ids = @perf_metric_ids_55;
-		} else {
-			@perf_metric_ids = @perf_metric_ids_51;
-		}
 	} else {
 		@perf_metric_ids = @perf_metric_ids_51;
 	}
@@ -125,7 +121,7 @@ foreach $host_ref (@$host_view) {
 		foreach my $v_ref (@$values) {
 			# Search Datastore Info
 			my $dsname = "not found";
-			foreach my $ds (@{$host_ref->config->fileSystemVolume->mountInfo}) {
+			foreach my $ds (@{$host_ref->{'config.fileSystemVolume'}->mountInfo}) {
 				my $ds_type = $ds->volume->type;
 				my $uuid = $v_ref->id->instance;
 				if ($ds_type eq "NFS") {
