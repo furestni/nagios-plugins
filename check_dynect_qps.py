@@ -58,6 +58,7 @@ def getopts():
 # login
 ######################################################################
 def login(customer, user, password):
+    body = {}
     try:
         url = urljoin(baseurl, "/REST/Session/")
         data = {
