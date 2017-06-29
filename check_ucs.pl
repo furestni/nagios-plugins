@@ -120,8 +120,8 @@ my $get;
 my @descs;
 foreach (@oids_all) {
 	$oid = $_;
-	if($type eq "fs") { $oid =~ s/\d+(\.\d{5,6})$/11\1/; }
-	else { $oid =~ s/\d+(\.\d{5,6})$/2\1/; }
+	if($type eq "fs") { $oid =~ s/\d+(\.\d{5,8})$/11\1/; }
+	else { $oid =~ s/\d+(\.\d{5,8})$/2\1/; }
 	$get = $session->get_request("$oid");
 	if (!defined $get) {
 		printf "SNMP Error: %s.\n at OID: $_\n", $session->error();
