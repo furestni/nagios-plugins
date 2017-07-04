@@ -18,7 +18,7 @@ STATUS_CRITICAL = 2
 STATUS_UNKNOWN = 3
 
 DAILY_SUFFIX_LENGTH = len("-YYYY.MM.DD")
-TODAY = datetime.datetime.now().strftime("%Y.%m.%d")
+TODAY = datetime.datetime.utcnow().strftime("%Y.%m.%d")
 
 def get_argument_parser():
 
