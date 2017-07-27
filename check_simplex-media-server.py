@@ -96,6 +96,7 @@ def interpret(health):
         'quebec': 'Lighttpd Status',
         'romeo': 'Compatibility Mode',
         'zulu': 'Allover Health Status',
+        'sierra': '???',
     }
 
     for i in health:
