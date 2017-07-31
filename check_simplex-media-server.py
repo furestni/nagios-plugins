@@ -96,11 +96,16 @@ def interpret(health):
         'quebec': 'Lighttpd Status',
         'romeo': 'Compatibility Mode',
         'zulu': 'Allover Health Status',
-        'sierra': '???',
+        'sierra': 'Nodes in Cluster',
     }
 
     for i in health:
-        out += "<tr style='border-bottom:1px solid #000'><td>" + meaning[i] + " (" + i + ")</td><td>" + health[i] + "</td></tr>"
+        if i in meaning:
+            context = meaning[i] + " (" + i + ")"
+        else:
+            context = "Unknown (" + i + ")"
+
+        out += "<tr style='border-bottom:1px solid #000'><td>" + context + "</td><td>" + health[i] + "</td></tr>"
 
     out += "</table>"
     return out
