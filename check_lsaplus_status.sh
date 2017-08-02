@@ -48,7 +48,8 @@ do
   esac
 done
 
-stations=( drs1 drs2 drs3 drs4news drsmw rr drsvirus espace-2 la-1ere option-musique regi_ag_so regi_bs_bl regi_be_fr_vs regi_ost regi_zentr regi_zh_sh rsj rsp rsc_de rsc_fr rsc_it reteuno retedue retetre couleur3 drs_event rts_event rsi_event rr_event regi_gr )
+#stations=( drs1 drs2 drs3 drs4news drsmw rr drsvirus espace-2 la-1ere option-musique regi_ag_so regi_bs_bl regi_be_fr_vs regi_ost regi_zentr regi_zh_sh rsj rsp rsc_de rsc_fr rsc_it reteuno retedue retetre couleur3 drs_event rts_event rsi_event rr_event regi_gr )
+stations=( drs1 drs2 drs3 drs4news option-musique rsj rsp rsc_de reteuno couleur3 )
 qualities=(32 96)
 #url_base="http://"$host"/audio/"
 url_playlist=".stream/chunklist_DVR.m3u8"
@@ -95,7 +96,7 @@ function checkDVR
       content="$(curl --compress -s "$url")"
       segment_num="$(echo "$content" | grep aac -c)"
       perfdata=$perfdata$delimiter$i"_"$q"="$segment_num
-	  #echo "${i}_${q}: $segment_num" 1>&2
+	  echo "${i}_${q}: $segment_num" 1>&2
       if [[ $segment_num < 1980  ]]; then
         error=$((error+1))
       fi
