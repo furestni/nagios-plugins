@@ -11,7 +11,7 @@
 # - Implement https
 # = Further playlist parsing
 #
- 
+
 use warnings;
 use strict;
 
@@ -52,17 +52,17 @@ my %ICINGA_RET_CODES = (
 # Usage
 sub usage() {
 	my $usage = <<'USAGE';
-Usage: hls_test.pl [OPTION]... --url | -u URL
+Usage: check_hls.pl [OPTION]... --url | -u URL
 Icinga2 check script that downloads a HLS playlist from URL and check if it is valid and how long the request took.
 Returns the request time as performance data.
-           
+
 Returns errorcodes usefull for Icinga2.
 
   -u, --url=URL                URL from where to download the playlist.
   -t, --maxtime=MAXTIME        Maximum time in seconds a request may take (default: 0.5).
   -v, --verbose                Print debug messages.
-  -d, --tmpdir                 Directory to temporarily store the playlist (default: system's default). 
-  -p, --perflabel              Performance data label name in icinga2 for the request time (default: request_time). 
+  -d, --tmpdir                 Directory to temporarily store the playlist (default: system's default).
+  -p, --perflabel              Performance data label name in icinga2 for the request time (default: request_time).
   -h, --help                   This text.
 
 Type "perlpod <script_name>" for more script informations.
@@ -104,11 +104,11 @@ sub get_playlist($$) {
 	my $req_start_time = undef;
 	my $req_end_time = undef;
 	my $req_time = undef;
-	
+
 	my $ua = LWP::UserAgent->new();
 
 	$ua->ssl_opts( 'verify_hostname' => 1 );
-	
+
 	$req_start_time = Time::HiRes::time();
 	$response = $ua->get($url, ':content_file' => $file );
 	$req_end_time = Time::HiRes::time();
@@ -123,7 +123,7 @@ sub parse_playlist($) {
 
 	# file handle of the playlist file
 	my $pl = $_[0];
-	
+
 	# Reset postition in file for good measure and safe coding...etc.....
 	seek($pl, 0, 0);
 
@@ -132,10 +132,10 @@ sub parse_playlist($) {
 	if ( $first_line !~ m/$PL_HEADER/xms ) {
 		return($ICINGA_RET_CODES{"ERROR"}, "Non-valid playlist file received (header not HLS compliant)");
 	}
-	
+
 	if ( defined( $OPTIONS{'verbose'} ) ) {
 		while ( my $line = <$pl> ) {
-			print($line);	
+			print($line);
 		}
 	}
 	return($ICINGA_RET_CODES{"OK"}, "");
@@ -182,14 +182,14 @@ sub main(@) {
 		printf("%s|$OPTIONS{'perflabel'}=%6fs\n", $parse_msg, $lwp_req_time);
 		return($err_code); # icinga2 error code already resolved in function
 	}
-	
+
 	# playlist could be downloaded and is ok
 	# now check if it took too long
-	
+
 	if( $lwp_req_time >= $OPTIONS{'maxtime'} ) {
 		printf("ERROR: Request time was %6f seconds.|%s=%6fs\n", $lwp_req_time, $OPTIONS{'perflabel'}, $lwp_req_time );
 		return($ICINGA_RET_CODES{'ERROR'});
-	}else{		
+	}else{
 		printf("OK: Request time was %6f seconds.|%s=%6fs\n", $lwp_req_time, $OPTIONS{'perflabel'}, $lwp_req_time );
 		return($ICINGA_RET_CODES{'OK'});
 	}
