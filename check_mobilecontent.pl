@@ -106,6 +106,8 @@ if (defined($counter{'status_error'}{'count'}) && ($counter{'status_error'}{'cou
 	$rc = 2;
 } elsif (defined($counter{'status_warning'}{'count'}) && ($counter{'status_warning'}{'count'} > 0)) {
 	$rc = 1;
+} elsif (defined($counter{'status_inactive'}{'count'}) && ($counter{'status_inactive'}{'count'} > 0)) {
+	$rc = 1;
 } elsif (defined($counter{'status_ok'}{'count'}) && ($counter{'status_ok'}{'count'} != 11)) {
 	unshift @msg, sprintf('unknown_status=%d', 11-$counter{'status_ok'}{'count'});
 	$rc = 1;
