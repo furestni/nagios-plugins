@@ -42,11 +42,11 @@ def main():
         data_list = [data_list]
     for data in data_list:
         if key in data:
-            if error_value and str(data[key]) == str(error_value):
+            if error_value and str(data[key]).lower() == str(error_value).lower():
                 error_found = True
-            elif warning_value and str(data[key]) == str(warning_value):
+            elif warning_value and str(data[key]).lower() == str(warning_value).lower():
                 warning_found = True
-            elif str(data[key]) == str(ok_value):
+            elif str(data[key]).lower() == str(ok_value).lower():
                 ok_found = True
             else:
                 nok_found = True
