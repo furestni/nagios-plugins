@@ -92,86 +92,92 @@ sub perform_check_Volume_Stats() {
 
 	my ($http_rc, $data_ref) = fetchSolidfireData($opt{'mvip'}.":".$opt{'port'}, '/json-rpc/8.4', $req, $opt{'auth'});
 
-	# get more information, same volume ID:
-	$req->{'method'} = 'GetVolumeEfficiency';
-	$req->{'id'}++;
+	if (defined($data_ref->{'error'} )) {
+		print "Error:\n", Dumper ($data_ref) if ($opt{'verbose'} or $opt{'debug'});
+		$rc = 3;
+		$msg = sprintf ("Error %s: %s", $data_ref->{'error'}{'code'}, $data_ref->{'error'}{'message'});
+	} else {
+
+		# get more information, same volume ID:
+		$req->{'method'} = 'GetVolumeEfficiency';
+		$req->{'id'}++;
 	
-	my ($http_rc2, $data_ref2) = fetchSolidfireData($opt{'mvip'}.":".$opt{'port'}, '/json-rpc/8.4', $req, $opt{'auth'});
+		my ($http_rc2, $data_ref2) = fetchSolidfireData($opt{'mvip'}.":".$opt{'port'}, '/json-rpc/8.4', $req, $opt{'auth'});
 
-	if (defined($data_ref) && defined($data_ref2)) {
+		if (defined($data_ref) && defined($data_ref2)) {
 
-		if ($opt{'verbose'} && $opt{'debug'}) {
-			print Dumper ($data_ref);			
-			print Dumper ($data_ref2);
-		}
+			if ($opt{'verbose'} && $opt{'debug'}) {
+				print Dumper ($data_ref);			
+				print Dumper ($data_ref2);
+			}
 			
 	
 
-		if ($opt{'verbose'}) {
-			printf "Volume ID: %s\n", $data_ref->{'result'}{'volumeStats'}{'volumeID'};
-			printf "actualIOPS: %d\n", $data_ref->{'result'}{'volumeStats'}{'actualIOPS'};
-			printf "latency: %.3fms\n", $data_ref->{'result'}{'volumeStats'}{'latencyUSec'}/1000;
-			printf "readLatency: %.3fms\n", $data_ref->{'result'}{'volumeStats'}{'readLatencyUSec'}/1000;
-			printf "writeLatency: %.3fms\n", $data_ref->{'result'}{'volumeStats'}{'writeLatencyUSec'}/1000;
-			printf "throttle: %s\n", $data_ref->{'result'}{'volumeStats'}{'throttle'};
-			printf "volumeUtilization: %.3f\n", $data_ref->{'result'}{'volumeStats'}{'volumeUtilization'};
+			if ($opt{'verbose'}) {
+				printf "Volume ID: %s\n", $data_ref->{'result'}{'volumeStats'}{'volumeID'};
+				printf "actualIOPS: %d\n", $data_ref->{'result'}{'volumeStats'}{'actualIOPS'};
+				printf "latency: %.3fms\n", $data_ref->{'result'}{'volumeStats'}{'latencyUSec'}/1000;
+				printf "readLatency: %.3fms\n", $data_ref->{'result'}{'volumeStats'}{'readLatencyUSec'}/1000;
+				printf "writeLatency: %.3fms\n", $data_ref->{'result'}{'volumeStats'}{'writeLatencyUSec'}/1000;
+				printf "throttle: %s\n", $data_ref->{'result'}{'volumeStats'}{'throttle'};
+				printf "volumeUtilization: %.3f\n", $data_ref->{'result'}{'volumeStats'}{'volumeUtilization'};
 		
-			printf "compression: %.3f\n", $data_ref2->{'result'}{'compression'};
-			printf "deduplication: %.3f\n", $data_ref2->{'result'}{'deduplication'};
-			printf "thinProvisioning: %.3f\n", $data_ref2->{'result'}{'thinProvisioning'};
-		}
+				printf "compression: %.3f\n", $data_ref2->{'result'}{'compression'};
+				printf "deduplication: %.3f\n", $data_ref2->{'result'}{'deduplication'};
+				printf "thinProvisioning: %.3f\n", $data_ref2->{'result'}{'thinProvisioning'};
+			}
 	
 	
-		$msg = sprintf
-			"actualIOPS=%d usedCapacity=%.2f%% volumeUtilization=%.1f%% latency=%.3fms readLatency=%.3fms writeLatency=%.3fms compression=%.3f deduplication=%.3f thinProvisioning=%.3f",
-	        $data_ref->{'result'}{'volumeStats'}{'actualIOPS'},
-			100/($data_ref->{'result'}{'volumeStats'}{'volumeSize'}/4096)*$data_ref->{'result'}{'volumeStats'}{'nonZeroBlocks'},
-	        $data_ref->{'result'}{'volumeStats'}{'volumeUtilization'}*100,
-	        $data_ref->{'result'}{'volumeStats'}{'latencyUSec'}/1000,
-	        $data_ref->{'result'}{'volumeStats'}{'readLatencyUSec'}/1000,
-	        $data_ref->{'result'}{'volumeStats'}{'writeLatencyUSec'}/1000,
-	        $data_ref2->{'result'}{'compression'},
-	        $data_ref2->{'result'}{'deduplication'},
-	        $data_ref2->{'result'}{'thinProvisioning'},
-			. " | " .
-			sprintf 
-			"actualIOPS=%d usedCapacity=%.2f%% volumeUtilization=%.1f%% latency=%.6fs readLatency=%.6fs writeLatency=%.6fs compression=%.3f deduplication=%.3f thinProvisioning=%.3f throttle=%s", 
-			$data_ref->{'result'}{'volumeStats'}{'actualIOPS'},
-			100/($data_ref->{'result'}{'volumeStats'}{'volumeSize'}/4096)*$data_ref->{'result'}{'volumeStats'}{'nonZeroBlocks'},
-			$data_ref->{'result'}{'volumeStats'}{'volumeUtilization'}*100,
-			$data_ref->{'result'}{'volumeStats'}{'latencyUSec'}/1000/1000,
-			$data_ref->{'result'}{'volumeStats'}{'readLatencyUSec'}/1000/1000,
-			$data_ref->{'result'}{'volumeStats'}{'writeLatencyUSec'}/1000/1000,
-			$data_ref2->{'result'}{'compression'},
-			$data_ref2->{'result'}{'deduplication'},
-			$data_ref2->{'result'}{'thinProvisioning'},
-			$data_ref->{'result'}{'volumeStats'}{'throttle'}
-		;
+			$msg = sprintf
+				"actualIOPS=%d usedCapacity=%.2f%% volumeUtilization=%.1f%% latency=%.3fms readLatency=%.3fms writeLatency=%.3fms compression=%.3f deduplication=%.3f thinProvisioning=%.3f",
+		        $data_ref->{'result'}{'volumeStats'}{'actualIOPS'},
+				100/($data_ref->{'result'}{'volumeStats'}{'volumeSize'}/4096)*$data_ref->{'result'}{'volumeStats'}{'nonZeroBlocks'},
+		        $data_ref->{'result'}{'volumeStats'}{'volumeUtilization'}*100,
+		        $data_ref->{'result'}{'volumeStats'}{'latencyUSec'}/1000,
+		        $data_ref->{'result'}{'volumeStats'}{'readLatencyUSec'}/1000,
+		        $data_ref->{'result'}{'volumeStats'}{'writeLatencyUSec'}/1000,
+		        $data_ref2->{'result'}{'compression'},
+		        $data_ref2->{'result'}{'deduplication'},
+		        $data_ref2->{'result'}{'thinProvisioning'},
+				. " | " .
+				sprintf 
+				"actualIOPS=%d usedCapacity=%.2f%% volumeUtilization=%.1f%% latency=%.6fs readLatency=%.6fs writeLatency=%.6fs compression=%.3f deduplication=%.3f thinProvisioning=%.3f throttle=%s", 
+				$data_ref->{'result'}{'volumeStats'}{'actualIOPS'},
+				100/($data_ref->{'result'}{'volumeStats'}{'volumeSize'}/4096)*$data_ref->{'result'}{'volumeStats'}{'nonZeroBlocks'},
+				$data_ref->{'result'}{'volumeStats'}{'volumeUtilization'}*100,
+				$data_ref->{'result'}{'volumeStats'}{'latencyUSec'}/1000/1000,
+				$data_ref->{'result'}{'volumeStats'}{'readLatencyUSec'}/1000/1000,
+				$data_ref->{'result'}{'volumeStats'}{'writeLatencyUSec'}/1000/1000,
+				$data_ref2->{'result'}{'compression'},
+				$data_ref2->{'result'}{'deduplication'},
+				$data_ref2->{'result'}{'thinProvisioning'},
+				$data_ref->{'result'}{'volumeStats'}{'throttle'}
+			;
 
 
-		#### Logic for health-checks ####
-		$rc = 0;
-        if ($data_ref->{'result'}{'volumeStats'}{'volumeUtilization'}*100 > $opt{'critutil'}) {
-			$rc = 2;
-			$msg = "Critical volumeUtilization - ".$msg;
-		} elsif ($data_ref->{'result'}{'volumeStats'}{'volumeUtilization'}*100 > $opt{'warnutil'}) {
-			$rc = 1;
-			$msg = "Warning volumeUtilization - ".$msg;
-		}
-		if ($data_ref->{'result'}{'volumeStats'}{'latencyUSec'}/1000 > $opt{'critlatency'}) {
-			$rc = 2;
-			$msg = "Critical latency - ".$msg;
-		} elsif ($data_ref->{'result'}{'volumeStats'}{'latencyUSec'}/1000 > $opt{'warnlatency'}) {
-			$rc = $rc > 1 ? $rc : 1;
-			$msg = "Warning latency - ".$msg;
-		}
+			#### Logic for health-checks ####
+			$rc = 0;
+	        if ($data_ref->{'result'}{'volumeStats'}{'volumeUtilization'}*100 > $opt{'critutil'}) {
+				$rc = 2;
+				$msg = "Critical volumeUtilization - ".$msg;
+			} elsif ($data_ref->{'result'}{'volumeStats'}{'volumeUtilization'}*100 > $opt{'warnutil'}) {
+				$rc = 1;
+				$msg = "Warning volumeUtilization - ".$msg;
+			}
+			if ($data_ref->{'result'}{'volumeStats'}{'latencyUSec'}/1000 > $opt{'critlatency'}) {
+				$rc = 2;
+				$msg = "Critical latency - ".$msg;
+			} elsif ($data_ref->{'result'}{'volumeStats'}{'latencyUSec'}/1000 > $opt{'warnlatency'}) {
+				$rc = $rc > 1 ? $rc : 1;
+				$msg = "Warning latency - ".$msg;
+			}
 
 	
-	} else {
-		$msg = "Error";
-		$rc = 3;
-	}	
-
+		} else {
+			$msg = "Error";
+			$rc = 3;
+		}	
+	}
 	
 	return ($rc, $msg);
 
