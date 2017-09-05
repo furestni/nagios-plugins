@@ -4,6 +4,9 @@ import sys
 import argparse
 import requests
 
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--url', required=True, help='url of the json api')
@@ -24,8 +27,6 @@ def main():
     verify = not args.insecure
 
     description = ''
-
-    requests.packages.urllib3.disable_warnings()
 
     try:
         r = requests.get(url, verify=verify) 
