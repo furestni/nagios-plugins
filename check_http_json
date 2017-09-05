@@ -25,6 +25,8 @@ def main():
 
     description = ''
 
+    requests.packages.urllib3.disable_warnings()
+
     try:
         r = requests.get(url, verify=verify) 
         if verbose:
