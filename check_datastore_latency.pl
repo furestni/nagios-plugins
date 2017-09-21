@@ -213,6 +213,6 @@ printf "Latency %s %s | %s\n",
 	join (' ', @i_status),
 	join (' ', @i_performance);
 	
-print "EXIT CODE=",$exit_code,"\n";
+print "EXIT CODE=",$exit_code,"\n" if ($opt_debug);
 exit ($exit_code);
 
