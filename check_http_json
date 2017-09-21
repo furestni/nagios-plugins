@@ -4,6 +4,9 @@ import sys
 import argparse
 import requests
 
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--url', required=True, help='url of the json api')
@@ -12,7 +15,7 @@ def main():
     parser.add_argument('--warning-value', help='warning value the key should have in json')
     parser.add_argument('--error-value', help='error value the key should have in json')
     parser.add_argument('--description', default=False, action='store_true', help='print the full json return value with the status message')
-
+    parser.add_argument('--insecure', default=False, help='Allow connections to SSL sites without certs')
     args = parser.parse_args()
 
     url = args.url
@@ -21,11 +24,12 @@ def main():
     error_value = args.error_value
     warning_value = args.warning_value
     verbose = args.description
+    verify = not args.insecure
 
     description = ''
 
     try:
-        r = requests.get(url)
+        r = requests.get(url, verify=verify) 
         if verbose:
             description = 'value: ' + r.text
         data_list = r.json()
