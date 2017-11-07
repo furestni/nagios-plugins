@@ -81,10 +81,15 @@ def login(customer, user, password):
 ######################################################################
 def fetch_qps_report_ressource(token, timegap):
     now = datetime.datetime.now()
+
     end = now - datetime.timedelta(minutes=offset)
+    # Make timestamp of end
     end_ts = time.mktime(end.timetuple())
+
     start = end - datetime.timedelta(minutes=timegap)
+    # Make timestamp of start
     start_ts = time.mktime(start.timetuple())
+
     body = {}
     try:
         url = urljoin(baseurl, "/REST/QPSReport/")
@@ -164,7 +169,8 @@ def main():
     token = login(options.customer, options.user, options.password)
     report = fetch_qps_report_ressource(token, options.time)
     qps = extract_latest_qps(report)
-
+    # QPS granularity is 5 minutes by default
+    qps = qps / 300
     sys.stdout.write("Current QPS: {0} | qps={0}".format(qps))
     sys.exit(0)
 
