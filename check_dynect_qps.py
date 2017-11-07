@@ -51,6 +51,9 @@ def getopts():
                       action="store", type="int", default=5,
                       help="timerange in minutes",
                       metavar="TIME")
+    parser.add_option("-g", "--granularity", dest="granularity",
+                      action="store_true", default=False,
+                      help="use granularity to get real gps")
     return parser
 
 
@@ -169,8 +172,11 @@ def main():
     token = login(options.customer, options.user, options.password)
     report = fetch_qps_report_ressource(token, options.time)
     qps = extract_latest_qps(report)
+
     # QPS granularity is 5 minutes by default
-    qps = qps / 300
+    if options.granularity:
+        qps = qps / 300
+
     sys.stdout.write("Current QPS: {0} | qps={0}".format(qps))
     sys.exit(0)
 
