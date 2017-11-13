@@ -4,8 +4,10 @@ import sys
 import argparse
 import requests
 
+
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -28,14 +30,15 @@ def main():
 
     description = ''
 
+    r = requests.get(url, verify=verify)
+    if verbose:
+        description = 'value: ' + r.text
+
+    data_list = r.json()
     try:
-        r = requests.get(url, verify=verify) 
-        if verbose:
-            description = 'value: ' + r.text
-        data_list = r.json()
+        response_time = r.elapsed.total_seconds()
     except:
-        print "UNKNOWN: URL '%s' could not be reached or did not return json %s" % (url, description)
-        sys.exit(2)
+        response_time = 0.0
 
     error_found = False
     warning_found = False
@@ -56,20 +59,22 @@ def main():
                 nok_found = True
 
     if error_found:
-        print "ERROR: Key '%s' with error-value '%s' found on %s %s" % (key, error_value, url, description)
+        print "ERROR: Key '%s' with error-value '%s' found on %s %s | time=%ss;;;0.000000" % (key, error_value, url, description, response_time)
         sys.exit(2)
     elif warning_found:
-        print "ERROR: Key '%s' with warning-value '%s' found on %s %s" % (key, warning_value, url, description)
+        print "ERROR: Key '%s' with warning-value '%s' found on %s %s | time=%ss;;;0.000000" % (key, warning_value, url, description, response_time)
         sys.exit(1)
     elif ok_found:
-        print "OK: Key '%s' with ok-value '%s' found on %s %s" % (key, ok_value, url, description)
+        print "OK: Key '%s' with ok-value '%s' found on %s %s | time=%ss;;;0.000000" % (key, ok_value, url, description, response_time)
     elif nok_found:
-        print "ERROR: Key '%s' is not ok on %s %s" %  (key, url, description)
+        print "ERROR: Key '%s' is not ok on %s %s | time=%ss;;;0.000000" % (key, url, description, response_time)
         sys.exit(2)
     else:
-        print "UNKNOWN: Key '%s' not found or ok_value '%s' or error_value '%s' not found on %s %s" % (key, ok_value, error_value, url, description)
+        print "UNKNOWN: Key '%s' not found or ok_value '%s' or error_value '%s' not found on %s %s | time=%ss;;;0.000000" % (
+            key, ok_value, error_value, url, description, response_time
+        )
         sys.exit(3)
+
 
 if __name__ == "__main__":
     main()
-
