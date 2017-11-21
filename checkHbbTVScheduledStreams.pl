@@ -113,17 +113,22 @@ sub checkStreamStatus($$$) {
 # -----------
 sub listEvents($) {
 	my ($events) = @_;
+	my $state = "";
 
 	printf "There are %s Events Scheduled.\n", scalar @{$events};
 	foreach my $e (@{$events}) {
 
+		if (defined($e->{'checkIsNowOnline'})) {
+			$state = $e->{'checkIsNowOnline'} ? "Live" : "Scheduled";
+			$state .= defined($e->{'checkResult'}) ? ", ".$e->{'checkResult'} : "";
+		} 
 		printf "%s - %s %-55s %s %-50s %s\n",
 			$e->{'startDate'},
 			$e->{'endDate'},
 			$e->{'encoder'},
 			$e->{'businessUnit'},
 			$e->{'title'},
-			defined($e->{'checkResult'}) ? $e->{'checkResult'} : "n/a";
+			$state
 	}
 }
 
@@ -138,14 +143,16 @@ sub icingaResult($) {
 	my %perf;
 	my @perfList;
 	my @missing;
+	my @live;
 	my $result;
 
 	$eventsScheduled = scalar @{$events};
 	foreach my $e (@{$events}) {
-		$perf{$e->{'checkStream'}} = 0;
+		$perf{$e->{'checkStream'}} = 0 unless defined($perf{$e->{'checkStream'}}); # do not overwrite if same stream is scheduled later again...
 		if ($e->{'checkIsNowOnline'}) {
 			$eventsLive++;
 			$perf{$e->{'checkStream'}}++;
+			push @live, $e->{'checkStream'};
 			if ($e->{'checkResult'} eq "Online") {
 				$eventStreamOnline++;
 				$perf{$e->{'checkStream'}}++;
@@ -164,11 +171,15 @@ sub icingaResult($) {
 	push @perfList, sprintf("%s=%s", "online", $eventStreamOnline);
 
 	# Output
-	$result = sprintf("%d event(s) scheduled in the next %d day(s), %d currently live, %d stream(s) online on %s: %s | %s\n",
+	$result = sprintf("%d event%s scheduled in the next %d day%s, %d currently live %s, %d stream%s online on %s: %s | %s\n",
 		$eventsScheduled,
+		$eventsScheduled != 1 ? "s" : "",
 		$opt{'scheduleDays'},
+		$opt{'scheduleDays'} != 1 ? "s" : "",
 		$eventsLive,
+		scalar @live == 0 ? "" : "(".join(" ", @live).")",
 		$eventStreamOnline,
+		$eventStreamOnline != 1 ? "s" : "",
 		$opt{'streamserver'},
 		$eventsLive == $eventStreamOnline ? "OK" : "Missing Stream(s):".join(" ", @missing),
 		join(" ", @perfList)
