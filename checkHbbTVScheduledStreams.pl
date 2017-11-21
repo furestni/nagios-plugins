@@ -149,6 +149,7 @@ sub icingaResult($) {
 			if ($e->{'checkResult'} eq "Online") {
 				$eventStreamOnline++;
 				$perf{$e->{'checkStream'}}++;
+			} else {
 				push @missing, $e->{'checkStream'};
 			}
 		}
