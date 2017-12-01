@@ -138,9 +138,6 @@ if (defined($opt{'verbose'})) {
 
 my $result_ref = getRESTData ($client, $query, $headers);
 
-my $ts = defined($result_ref->{'results'}[0]{'series'}[0]{'values'}[0][0]) ? $result_ref->{'results'}[0]{'series'}[0]{'values'}[0][0] : $opt{'minutes'}." minutes";
-my $value = defined($result_ref->{'results'}[0]{'series'}[0]{'values'}[0][1]) ? $result_ref->{'results'}[0]{'series'}[0]{'values'}[0][1] : 0;
-
 if ($opt{'verbose'}) {
 	print "--- RESULT ---------------------------------\n";
 	print Dumper $result_ref;
@@ -148,17 +145,22 @@ if ($opt{'verbose'}) {
 }
 
 my $rc = 3;
-my $msg = "UNKNOWN";
+my $msg = "Query failed\n";
 
-if ($value < $opt{'critical'}) {
-	$msg = "Critical: $value entries found since $ts\n";
-	$rc = 2;
-} elsif ($value < $opt{'warning'}) {
-	$msg = "Warning: $value entries found since $ts\n";
-	$rc = 1;
-} else {
-	$msg ="OK: $value entries found since $ts\n";
-	$rc = 0;
+if (defined($result_ref)) {
+	my $ts = defined($result_ref->{'results'}[0]{'series'}[0]{'values'}[0][0]) ? $result_ref->{'results'}[0]{'series'}[0]{'values'}[0][0] : $opt{'minutes'}." minutes";
+	my $value = defined($result_ref->{'results'}[0]{'series'}[0]{'values'}[0][1]) ? $result_ref->{'results'}[0]{'series'}[0]{'values'}[0][1] : 0;
+
+	if ($value < $opt{'critical'}) {
+		$msg = "Critical: $value entries found since $ts\n";
+		$rc = 2;
+	} elsif ($value < $opt{'warning'}) {
+		$msg = "Warning: $value entries found since $ts\n";
+		$rc = 1;
+	} else {
+		$msg ="OK: $value entries found since $ts\n";
+		$rc = 0;
+	}
 }
 
 print $msg;
