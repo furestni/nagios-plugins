@@ -19,6 +19,7 @@ use strict;
 my %opt;
 my %checks = (
 				'perform_check_Volume_Stats', \&perform_check_Volume_Stats,
+				'perform_check_Cluster_Capacity', \&perform_check_Cluster_Capacity,
 			 );
 my $msg = "?";
 my $rc = 3;
@@ -30,6 +31,8 @@ $opt{'warnutil'} = 200;
 $opt{'critutil'} = 300;
 $opt{'warnlatency'} = 250;
 $opt{'critlatency'} = 500;
+$opt{'warncapacity'} = 80;
+$opt{'critcapacity'} = 90;
 
 
 # fetch data from server using REST API
@@ -43,7 +46,7 @@ sub fetchSolidfireData($$$$) {
 
 	$client->POST($path, to_json($req));
 
-	if ($opt{'verbose'}) {
+	if ($opt{'debug'}) {
 		print "---------\n";
 		printf ("Server: %s\nRequest:\n%s\nPath:   %s\n", $server, to_json($req), $path);
 	 	print "---------\n";
@@ -59,7 +62,90 @@ sub fetchSolidfireData($$$$) {
     );
 }
 
+# check implementation
+# --------------------
+sub perform_check_Cluster_Capacity() {
 
+	my $rc = 3;
+	my $msg = "unknown";
+	my @perfdata;
+
+	# options for this check
+	# $opt{'warncapacity'} and ${'critcapacity'} are set with defaults.
+
+	my $req = {
+		'method' => 'GetClusterFullThreshold',
+		'params' => {},
+		'id' => 1,
+	};
+
+	my ($http_rc, $data_ref) = fetchSolidfireData($opt{'mvip'}.":".$opt{'port'}, '/json-rpc/9.4', $req, $opt{'auth'});
+
+    if (defined($data_ref->{'error'} )) {
+        print "Error:\n", Dumper ($data_ref) if ($opt{'debug'});
+        $rc = 3;
+        $msg = sprintf ("Error %s: %s", $data_ref->{'error'}{'code'}, $data_ref->{'error'}{'message'});
+    } else {
+		if (defined($data_ref)) {
+			if ($opt{'debug'}) {
+				print Dumper ($data_ref);
+			}
+
+			# add some useful percent values
+			$data_ref->{'result'}{'percentUsedOfFullCapacity'} = (100/$data_ref->{'result'}{'sumTotalClusterBytes'})*$data_ref->{'result'}{'sumUsedClusterBytes'};
+			$data_ref->{'result'}{'percentUsedOfWarningThreshhold'} = (100/$data_ref->{'result'}{'stage3BlockThresholdBytes'})*$data_ref->{'result'}{'sumUsedClusterBytes'};
+			$data_ref->{'result'}{'percentUsedOfCriticalThreshhold'} = (100/$data_ref->{'result'}{'stage4BlockThresholdBytes'})*$data_ref->{'result'}{'sumUsedClusterBytes'};
+
+			# perfdata
+			foreach my $k (qw/sumTotalClusterBytes sumUsedClusterBytes stage2BlockThresholdBytes stage3BlockThresholdBytes stage4BlockThresholdBytes stage5BlockThresholdBytes sumTotalMetadataClusterBytes sumUsedMetadataClusterBytes percentUsedOfFullCapacity percentUsedOfWarningThreshhold percentUsedOfCriticalThreshhold/) {
+				push @perfdata, sprintf("%s=%d%s", $k, $data_ref->{'result'}{$k}, $k =~m/percent/ ? "%" : "");
+			}
+
+			if ($opt{'verbose'}) {
+				print "\n\nData\n";
+				printf "sumTotalClusterBytes:         %8.2f TB   %8.2f TiB\n", $data_ref->{'result'}{'sumTotalClusterBytes'}/1000000000000, $data_ref->{'result'}{'sumTotalClusterBytes'}/1024/1024/1024/1024;
+				printf "sumUsedClusterBytes:          %8.2f TB   %8.2f TiB\n", $data_ref->{'result'}{'sumUsedClusterBytes'}/1000000000000, $data_ref->{'result'}{'sumUsedClusterBytes'}/1024/1024/1024/1024;
+				printf "stage2BlockThresholdBytes:    %8.2f TB   %8.2f TiB\n", $data_ref->{'result'}{'stage2BlockThresholdBytes'}/1000000000000, $data_ref->{'result'}{'stage2BlockThresholdBytes'}/1024/1024/1024/1024;
+				printf "stage3BlockThresholdBytes:    %8.2f TB   %8.2f TiB\n", $data_ref->{'result'}{'stage3BlockThresholdBytes'}/1000000000000, $data_ref->{'result'}{'stage3BlockThresholdBytes'}/1024/1024/1024/1024;
+				printf "stage4BlockThresholdBytes:    %8.2f TB   %8.2f TiB\n", $data_ref->{'result'}{'stage4BlockThresholdBytes'}/1000000000000, $data_ref->{'result'}{'stage4BlockThresholdBytes'}/1024/1024/1024/1024;
+				printf "stage5BlockThresholdBytes:    %8.2f TB   %8.2f TiB\n", $data_ref->{'result'}{'stage5BlockThresholdBytes'}/1000000000000, $data_ref->{'result'}{'stage5BlockThresholdBytes'}/1024/1024/1024/1024;
+				printf "fullness:                     %s\n", $data_ref->{'result'}{'fullness'};
+				printf "Percent Used till full:            %5.1f%%\n", $data_ref->{'result'}{'percentUsedOfFullCapacity'};
+				printf "Percent Used till warning:         %5.1f%%\n", $data_ref->{'result'}{'percentUsedOfWarningThreshhold'};
+				printf "Percent Used till critical:        %5.1f%%\n", $data_ref->{'result'}{'percentUsedOfCriticalThreshhold'};
+
+				print "\n\nMetadata\n";
+				printf "sumTotalMetadataClusterBytes: %8.2f TB   %8.2f TiB\n", $data_ref->{'result'}{'sumTotalMetadataClusterBytes'}/1000000000000, $data_ref->{'result'}{'sumTotalMetadataClusterBytes'}/1024/1024/1024/1024;
+				printf "sumUsedMetadataClusterBytes:  %8.2f TB   %8.2f TiB\n", $data_ref->{'result'}{'sumUsedMetadataClusterBytes'}/1000000000000, $data_ref->{'result'}{'sumUsedMetadataClusterBytes'}/1024/1024/1024/1024;
+				printf "metadataFullness:             %s\n", $data_ref->{'result'}{'metadataFullness'};
+				print "\n";
+			}
+
+            #### Logic for health-checks ####
+            $rc = 0;
+
+			$msg = sprintf("percent used of warning threshhold=%.1f%%", $data_ref->{'result'}{'percentUsedOfWarningThreshhold'});
+
+			if ($data_ref->{'result'}{'percentUsedOfWarningThreshhold'} > $opt{'critcapacity'}) {
+				$rc = 2;
+				$msg .= " reached critical threshold";
+			} elsif ($data_ref->{'result'}{'percentUsedOfWarningThreshhold'} > $opt{'warncapacity'}){
+				$rc = 1;
+				$msg .= " reached warning threshold";
+			} else {
+				$rc = 0;
+			}
+
+			$msg .= " | ". join (' ',@perfdata);
+
+        } else {
+           $msg = "Error";
+		   $rc = 3;
+	   }
+   }
+   return ($rc, $msg);
+
+}
 
 # check implementation
 # --------------------
@@ -199,6 +285,8 @@ GetOptions (
     "critutil=i"    => \$opt{'critutil'},
     "warnlatency=i" => \$opt{'warnlatency'},
     "critlatency=i" => \$opt{'critlatency'},
+	"warncapacity=i"=> \$opt{'warncapacity'},
+	"critcapacity=i"=> \$opt{'critcapacity'},
     "verbose"		=> \$opt{'verbose'},
     "debug"			=> \$opt{'debug'},
     "help|?"		=> \$opt{'help'},
@@ -310,7 +398,9 @@ pass-though auth string
 
 =item B<--check>
 
-name of check to be executed
+name of check to be executed:
+	perform_check_Volume_Stats:     check and report volume statistics
+    perform_check_Cluster_Capacity: check and report cluster capacity statistics
 
 =item B<--warnutil>
 
@@ -327,6 +417,14 @@ warning level for latency
 =item B<--critlatency>
 
 critical level for latency
+
+=item B<--warncapacity>
+
+warning level for capacity: usage percentage of cluster warning threshhold, meaning if Solidfire reaches the warning threshhold this value would be 100%. Defauls to 80%.
+
+=item B<--critcapacity>
+
+critical level for capacity: usage percentage of cluster warning threshhold, meaning if Solidfire reaches the warning threshhold this value would be 100%. Defaults to 90%.
 
 =item B<--verbose>
 
