@@ -23,8 +23,8 @@ import argparse
 import requests
 import dns.resolver
 
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings()
+
 
 def get_ip_addresses(hostname):
     results = []
@@ -33,11 +33,13 @@ def get_ip_addresses(hostname):
         results.append(str(a))
     return results
 
+
 def main():
     parser = argparse.ArgumentParser(description='checks HTTP but uses every IP the hostname resovles to')
-    parser.add_argument('--proto', default='http', help='Protocol to be used, default http.')
+    parser.add_argument('--proto', default='http', help='Protocol to be used, default http')
     parser.add_argument('--hostname', required=True, help='hostname e.g. www.example.com')
-    parser.add_argument('--path', default="/", help='path e.g. /path/to, default /.')
+    parser.add_argument('--port', default=80, help='Port to be used, default 80')
+    parser.add_argument('--path', default="/", help='path e.g. /path/to, default /')
     parser.add_argument('--string', help='look for string in HTTP response body')
     parser.add_argument('--timeout', type=int, default=10, help='HTTP timeout in seconds')
 
@@ -45,6 +47,7 @@ def main():
 
     proto = args.proto
     hostname = args.hostname
+    port = args.port
     timeout = args.timeout
     path = args.path
     body_string = args.string
@@ -56,7 +59,7 @@ def main():
     headers = {'host': hostname}
     for ip in ips:
         try:
-            url = proto + "://" +ip + path
+            url = "%s://%s:%s/%s" % (proto, hostname, port, path)
             r = requests.get(url, headers=headers, timeout=timeout)
             status_code = r.status_code
             if status_code != 200:
@@ -90,6 +93,7 @@ def main():
         else:
             print("OK: ALL GOOD")
             sys.exit(0)
+
 
 if __name__ == "__main__":
     try:
