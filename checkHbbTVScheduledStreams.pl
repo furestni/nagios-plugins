@@ -115,7 +115,15 @@ sub listEvents($) {
 	my ($events) = @_;
 	my $state = "";
 
-	printf "There are %s Events Scheduled.\n", scalar @{$events};
+	if ($opt{'livevonly'} == 0) {
+		printf "Event(s) Scheduled: %d\n", scalar @{$events};
+	} else {
+		if (scalar @{$events} > 0) {
+			printf "Event(s) currently live: %d\n", scalar @{$events};
+		} else {
+			print "No Events live at the moment.\n";
+		}
+	}
 	foreach my $e (@{$events}) {
 
 		if (defined($e->{'checkIsNowOnline'})) {
@@ -166,17 +174,23 @@ sub icingaResult($) {
 	foreach my $p (keys(%perf)) {
 		push @perfList, sprintf("%s=%s",$p,$perf{$p});
 	}
-	push @perfList, sprintf("%s=%s", "scheduled", $eventsScheduled);
+	push @perfList, sprintf("%s=%s", "scheduled", $eventsScheduled) if ($opt{'livevonly'} == 0);
 	push @perfList, sprintf("%s=%s", "live", $eventsLive);
 	push @perfList, sprintf("%s=%s", "online", $eventStreamOnline);
 
 	# Output
-	$result = sprintf("%d event%s scheduled in the next %d day%s, %d currently live %s, %d stream%s online on %s: %s | %s\n",
-		$eventsScheduled,
-		$eventsScheduled != 1 ? "s" : "",
-		$opt{'scheduleDays'},
-		$opt{'scheduleDays'} != 1 ? "s" : "",
+	$result = "";
+	if ($opt{'livevonly'} == 0) {
+		$result = sprintf("%d event%s scheduled in the next %d day%s, ",
+			$eventsScheduled,
+			$eventsScheduled != 1 ? "s" : "",
+			$opt{'scheduleDays'},
+			$opt{'scheduleDays'} != 1 ? "s" : ""
+		);
+	}
+	$result .= sprintf("%d event%s currently live %s, %d stream%s online on %s: %s | %s\n",
 		$eventsLive,
+		$eventsLive != 1 ? "s" : "",
 		scalar @live == 0 ? "" : "(".join(" ", @live).")",
 		$eventStreamOnline,
 		$eventStreamOnline != 1 ? "s" : "",
@@ -264,9 +278,10 @@ exit 3 if $rc <3;
 
 $tsNow = genTimeStr(@now);
 
-$apiOpt_ref->{'from'} = $tsNow;
-$apiOpt_ref->{'to'}   = genTimeStr(localtime(time+(60*60*24*$opt{'scheduleDays'})));
+$apiOpt_ref->{'from'} = $opt{'livevonly'} == 1 ? genTimeStr(localtime(time+60)) : $tsNow;
+$apiOpt_ref->{'to'}   = $opt{'livevonly'} == 1 ? genTimeStr(localtime(time+300)) : genTimeStr(localtime(time+(60*60*24*$opt{'scheduleDays'})));
 $apiOpt_ref->{'isLiveOnly'} = $opt{'livevonly'} == 1 ? "true" : "false";
+
 
 $schedule_ref = fetchJSONData (
 	$opt{'apiserver'}, 
@@ -328,8 +343,10 @@ API Path for Schedule
 
 =item B<--livevonly>
 
-show only live events
-Scheduled events are always checked if they are currently live. 
+show/check only live events
+start time is now+60s end time+300s
+if the stream is about the end it will not be checked.
+scheduled events are not considered
 
 =item B<--user>
 
