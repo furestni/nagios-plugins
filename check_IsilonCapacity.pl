@@ -98,7 +98,12 @@ foreach my $storpool (@{$status->{'storagepools'}}) {
 		my $poolname = $storpool->{'name'};
 		my $usableCapacity = $storpool->{'usage'}{'total_bytes'} - $storpool->{'usage'}{'virtual_hot_spare_bytes'};
 		my $availableCapacity = $storpool->{'usage'}{'avail_bytes'};
-		my $usedPercentage = 100-(100/$usableCapacity*$availableCapacity);
+		my $usedPercentage;
+		if (($usableCapacity*$availableCapacity) > 0) {
+			$usedPercentage = 100-(100/$usableCapacity*$availableCapacity);
+		} else {
+			$usedPercentage = 0;
+		}
 		my $state = "ERR";
 
 		# Verbose output
