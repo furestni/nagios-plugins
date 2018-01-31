@@ -98,16 +98,29 @@ usage:
 
 =over 8
 
+=item B<--host>
+
+    Hostname/IP for SNMP request
+
+=item B<--community>
+
+    Community String, default: public
+
+=item B<--vpnname>
+
+    Name of VPN to check if UP/DOWN
+
 =item B<--debug>
    
-   Print Debugging Information
+    Print Debugging Information
 
 =item B<--help>
 
-   Print a brief help message and exits.
+    Print a brief help message and exits.
 
 =item B<--man>
-   Prints the manual page and exits.
+
+    Prints the manual page and exits.
 
 =back
 
