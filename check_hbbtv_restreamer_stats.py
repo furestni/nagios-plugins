@@ -32,7 +32,11 @@ def main():
     hostname = args.hostname
     port = args.port
     timeout = args.timeout
-    path = args.path
+
+    if not args.path.startswith('/'):
+        path = "/" + args.path
+    else:
+        path = args.path
 
     ips = get_ip_addresses(hostname)
 
@@ -40,7 +44,7 @@ def main():
     response = {}
     for ip in ips:
         try:
-            url = "%s://%s:%s/%s" % (proto, hostname, port, path)
+            url = "%s://%s:%s%s" % (proto, hostname, port, path)
             r = requests.get(url, headers=headers, timeout=timeout)
 
             status_code = r.status_code
