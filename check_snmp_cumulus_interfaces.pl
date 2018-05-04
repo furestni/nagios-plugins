@@ -117,32 +117,54 @@ foreach my $idLong (keys($response->{'ifAdminStatus'})) {
 	$counter->{'ifStatusCounter'}{"AdminState_".$txtAdminStatus[$response->{'ifAdminStatus'}{$idLong}]}++;
 }
 
+my $statename;
 foreach my $idLong (keys($response->{'ifOperStatus'})) {
     $idShort = $idLong;
    	$idShort =~ s/^\.1\.3\.6\.1\.2\.1\.2\.2\.1\.8\.//;
     $interface->{$idShort}{'ifOperStatus'} = $response->{'ifOperStatus'}{$idLong};
-	# increment counter for found state 
-	$counter->{'ifStatusCounter'}{"OperState_".$txtOperStatus[$response->{'ifOperStatus'}{$idLong}]}++;
+	$statename = defined($response->{'ifOperStatus'}{$idLong}) ? defined($txtOperStatus[$response->{'ifOperStatus'}{$idLong}]) ? $txtOperStatus[$response->{'ifOperStatus'}{$idLong}] : $response->{'ifOperStatus'}{$idLong} :  "undef";
+	# increment counter for state found
+	$counter->{'ifStatusCounter'}{"OperState_".$statename}++;
 }
 
 foreach my $idLong (keys($response->{'ifAlias'})) {
     $idShort = $idLong;
     $idShort =~ s/^\.1\.3\.6\.1\.2\.1\.31\.1\.1\.1\.18\.//;
     $interface->{$idShort}{'ifAlias'} = $response->{'ifAlias'}{$idLong};
-	$interface->{$idShort}{'ifIgnore'} = defined($opt{'ignore'}) ? grep (/^$response->{'ifAlias'}{$idLong}$/, split (",", $opt{'ignore'})) : 0;
 }
 
-
-
+# check all learned ids and set ifIgnore state
+foreach my $id (sort(keys($interface))) {
+	unless (defined($interface->{$id}{'ifAlias'})) {
+		$interface->{$id}{'ifAlias'} = "undef(id:$id)";
+	}
+	$interface->{$id}{'ifIgnore'} = defined($opt{'ignore'}) ? grep (/^$interface->{$id}{'ifAlias'}$/, split (",", $opt{'ignore'})) : 0;
+}
 
 $rc = 0;
 foreach my $id (sort(keys($interface))) {
-#	printf "%3d	  %-32s   %-20s %s\n", $id, $interface->{$id}{'ifAlias'}, $txtAdminStatus[$interface->{$id}{'ifAdminStatus'}], $txtOperStatus[$interface->{$id}{'ifOperStatus'}];
-#	printf "%3d	  %-32s   %s\n", $id, $interface->{$id}{'ifAlias'}, $txtOperStatus[$interface->{$id}{'ifOperStatus'}] if ($interface->{$id}{'ifAdminStatus'} == 1);
-	if (($interface->{$id}{'ifAdminStatus'} == 1) && ($interface->{$id}{'ifOperStatus'} != 1)) {
-		printf "%3d	  %-32s   %s	%s\n", $id, $interface->{$id}{'ifAlias'}, $txtOperStatus[$interface->{$id}{'ifOperStatus'}], $interface->{$id}{'ifIgnore'} > 0 ? "(ignored)" : "" if ($opt{'verbose'});
-		push(@msg, sprintf("%s=%s%s", $interface->{$id}{'ifAlias'}, $txtOperStatus[$interface->{$id}{'ifOperStatus'}], $interface->{$id}{'ifIgnore'} > 0 ? "(ignored)" : ""));
-		$rc=2 if ($interface->{$id}{'ifIgnore'} == 0 );
+	if ($opt{'verbose'}) {
+		printf "<%3d>   <%-32s>   <%-14s>   <%-7s>   <%s>\n",
+			$id,
+			$interface->{$id}{'ifAlias'},
+			defined($interface->{$id}{'ifOperStatus'}) ? defined($txtOperStatus[$interface->{$id}{'ifOperStatus'}]) ? $txtOperStatus[$interface->{$id}{'ifOperStatus'}] : $interface->{$id}{'ifOperStatus'} : "undef",
+			defined($interface->{$id}{'ifAdminStatus'}) ? defined($txtAdminStatus[$interface->{$id}{'ifAdminStatus'}]) ? $txtAdminStatus[$interface->{$id}{'ifAdminStatus'}] : $interface->{$id}{'ifAdminStatus'} : "undef",
+			$interface->{$id}{'ifIgnore'} > 0 ? "(ignored)" : ""
+			if (defined($interface->{$id}{'ifAdminStatus'}))
+	}
+
+	if (defined($interface->{$id}{'ifAdminStatus'}) && defined($interface->{$id}{'ifOperStatus'})) {
+		if (($interface->{$id}{'ifAdminStatus'} == 1) && ($interface->{$id}{'ifOperStatus'} != 1)) {
+			push(@msg, sprintf("%s=%s%s", $interface->{$id}{'ifAlias'}, $txtOperStatus[$interface->{$id}{'ifOperStatus'}], $interface->{$id}{'ifIgnore'} > 0 ? "(ignored)" : ""));
+			$rc=2 if ($interface->{$id}{'ifIgnore'} == 0 );
+		}
+	} else {
+		push(@msg, sprintf("%s:%s=%s%s",
+			$id,
+			$interface->{$id}{'ifAlias'},
+			defined($interface->{$id}{'ifOperStatus'}) ? defined($txtOperStatus[$interface->{$id}{'ifOperStatus'}]) ? $txtOperStatus[$interface->{$id}{'ifOperStatus'}] : $interface->{$id}{'ifOperStatus'} : "undef(id:$id)",
+			$interface->{$id}{'ifIgnore'} > 0 ? "(ignored)" : ""));
+		$rc=1 if (($interface->{$id}{'ifIgnore'} == 0 ) && ($rc < 1));
 	}
 }
 
