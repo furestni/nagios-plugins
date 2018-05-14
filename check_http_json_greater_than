@@ -51,9 +51,9 @@ def main():
         data_list = [data_list]
     for data in data_list:
         if key in data:
-            if error_value and int(data[key]) => int(error_value):
+            if error_value and int(data[key]) >= int(error_value):
                 error_found = True
-            elif warning_value and int(data[key]) => int(warning_value):
+            elif warning_value and int(data[key]) >= int(warning_value):
                 warning_found = True
             elif int(data[key]) == int(ok_value):
                 ok_found = True
