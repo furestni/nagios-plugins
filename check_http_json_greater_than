@@ -1,0 +1,90 @@
+#!/usr/bin/env python
+
+import sys
+import argparse
+import requests
+
+
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--url', required=True, help='url of the json api')
+    parser.add_argument('--key', required=True, help='key to look for in json')
+    parser.add_argument('--ok-value', required=True, help='ok value the key should have in json')
+    parser.add_argument('--warning-value', help='warning value the key should have in json')
+    parser.add_argument('--error-value', help='error value the key should have in json')
+    parser.add_argument('--description', default=False, action='store_true', help='print the full json return value with the status message')
+    parser.add_argument('--insecure', default=False, help='Allow connections to SSL sites without certs')
+    args = parser.parse_args()
+
+    url = args.url
+    key = args.key
+    ok_value = args.ok_value
+    error_value = args.error_value
+    warning_value = args.warning_value
+    verbose = args.description
+    verify = not args.insecure
+
+    description = ''
+
+    r = requests.get(url, verify=verify)
+    if verbose:
+        description = 'value: ' + r.text
+
+    data_list = r.json()
+    try:
+        response_time = r.elapsed.total_seconds()
+        reponse_bytes = r.headers.get('Content-Length') or 0
+    except:
+        response_time = 0.0
+        reponse_bytes = 0
+
+    error_found = False
+    warning_found = False
+    ok_found = False
+    nok_found = False
+    # HACK: allow other types at the root
+    if type(data_list) is dict:
+        data_list = [data_list]
+    for data in data_list:
+        if key in data:
+            if error_value and int(data[key]) => int(error_value):
+                error_found = True
+            elif warning_value and int(data[key]) => int(warning_value):
+                warning_found = True
+            elif int(data[key]) == int(ok_value):
+                ok_found = True
+            else:
+                nok_found = True
+
+    if error_found:
+        print "ERROR: Key '%s' with error-value '%s' found on %s %s | time=%ss;;;0.000000 size=%sB;;;0" % (
+            key, error_value, url, description, response_time, reponse_bytes
+        )
+        sys.exit(2)
+    elif warning_found:
+        print "ERROR: Key '%s' with warning-value '%s' found on %s %s | time=%ss;;;0.000000 size=%sB;;;0" % (
+            key, warning_value, url, description, response_time, reponse_bytes
+        )
+        sys.exit(1)
+    elif ok_found:
+        print "OK: Key '%s' with ok-value '%s' found on %s %s | time=%ss;;;0.000000 size=%sB;;;0" % (
+            key, ok_value, url, description, response_time, reponse_bytes
+        )
+    elif nok_found:
+        print "ERROR: Key '%s' is not ok on %s %s | time=%ss;;;0.000000 size=%sB;;;0" % (
+            key, url, description, response_time, reponse_bytes
+        )
+        sys.exit(2)
+    else:
+        print "UNKNOWN: Key '%s' not found or ok_value '%s' or error_value '%s' not found on %s %s | time=%ss;;;0.000000 size=%sB;;;0" % (
+            key, ok_value, error_value, url, description, response_time, reponse_bytes
+        )
+        sys.exit(3)
+
+
+if __name__ == "__main__":
+    main()
