@@ -26,7 +26,7 @@ def main():
     
     description = ''
 
-    r = requests.get(url)
+    r = requests.get(url, headers=headers)
 
     try:
         response_time = r.elapsed.total_seconds()
