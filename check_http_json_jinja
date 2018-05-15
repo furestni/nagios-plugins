@@ -15,7 +15,7 @@ def main():
     parser.add_argument('--header', action='append', default=[], help='adds http headers for the request')
     parser.add_argument('--metric', action='append', nargs=2, default=[], metavar=('key','jinja_expression'), help='performance data jinja expression')
     args = parser.parse_args()
-    
+    print(sys.argv)
     url=args.url
     ok_query=args.ok
     warning_query=args.warning
