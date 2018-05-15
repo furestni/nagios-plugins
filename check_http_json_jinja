@@ -13,9 +13,8 @@ def main():
     parser.add_argument('--error', required=True, help='error query')
     parser.add_argument('--description', default=False, action='store_true', help='print the full json return value with the status message')
     parser.add_argument('--header', action='append', default=[], help='adds http headers for the request')
-    parser.add_argument('--metric', action='append', nargs=2, default=[], metavar=('key','jinja_expression'), help='performance data jinja expression')
+    parser.add_argument('--metric', action='append', default=[], help='performance data jinja expression Example: avg_requests={{ json.avg }}')
     args = parser.parse_args()
-    print(sys.argv)
     url=args.url
     ok_query=args.ok
     warning_query=args.warning
@@ -61,7 +60,7 @@ def main():
         rc=3
 
     for metric in metrics:
-        msg+=" "+metric[0]+"="+Template("{{ "+metric[1]+" }}").render(json=r.json(),headers=r.headers,text=r.text,status=r.status_code)
+        msg+=" "+Template(metric).render(json=r.json(),headers=r.headers,text=r.text,status=r.status_code)
     
     print(msg)
 
