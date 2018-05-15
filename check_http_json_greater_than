@@ -18,11 +18,8 @@ def main():
     parser.add_argument('--error-value', help='error value the key should have in json')
     parser.add_argument('--description', default=False, action='store_true', help='print the full json return value with the status message')
     parser.add_argument('--insecure', default=False, help='Allow connections to SSL sites without certs')
-    parser.add_argument('--header', action='append', help='adds http headers for the request')
+    parser.add_argument('--header', action='append', default={}, help='adds http headers for the request')
     args = parser.parse_args()
-    print(sys.argv)
-    print(args.header)
-    sys.exit()
     url = args.url
     key = args.key
     ok_value = args.ok_value
@@ -30,10 +27,11 @@ def main():
     warning_value = args.warning_value
     verbose = args.description
     verify = not args.insecure
+    headers = dict(item.split(': ') for item in args.header)
 
     description = ''
 
-    r = requests.get(url, verify=verify)
+    r = requests.get(url, verify=verify, headers=headers)
     if verbose:
         description = 'value: ' + r.text
 
