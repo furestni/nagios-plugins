@@ -11,6 +11,7 @@ def main():
     parser.add_argument('--ok', required=True, help='ok query')
     parser.add_argument('--warning', required=True, help='warning query')
     parser.add_argument('--error', required=True, help='error query')
+    parser.add_argument('--message', required=False, help='message')
     parser.add_argument('--description', default=False, action='store_true', help='print the full json return value with the status message')
     parser.add_argument('--header', action='append', default=[], help='adds http headers for the request')
     parser.add_argument('--metric', action='append', default=[], help='performance data jinja expression Example: avg_requests={{ json.avg }}')
@@ -42,25 +43,29 @@ def main():
     if verbose:
         description = '\nResponse: ' + r.text
 
-
+    if args.message:
+        message = Template(args.message).render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)+' \n'
+    else:
+        message = ''
+    
     if(Template("{{ "+error_query+" }}").render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)=='True'):
-        msg = "ERROR: Query '{0}' matches on {1} {2} | time={3}s;;;0.000000 size={4}B;;;0".format(
-            error_query, url, description, response_time, reponse_bytes
+        msg = "{0}ERROR: Query '{1}' matches on {2} {3} | time={4}s;;;0.000000 size={5}B;;;0".format(
+            message, error_query, url, description, response_time, reponse_bytes
         )
         rc=2
     elif(Template("{{ "+warning_query+" }}").render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)=='True'):
-        msg = "WARNING: Query '{0}' matches on {1} {2} | time={3}s;;;0.000000 size={4}B;;;0".format(
-            warning_query, url, description, response_time, reponse_bytes
+        msg = "{0}WARNING: Query '{1}' matches on {2} {3} | time={4}s;;;0.000000 size={5}B;;;0".format(
+            message, warning_query, url, description, response_time, reponse_bytes
         )
         rc=1
     elif(Template("{{ "+ok_query+" }}").render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)=='True'):
-        msg = "OK: Query '{0}' matches on {1} {2} | time={3}s;;;0.000000 size={4}B;;;0".format(
-            ok_query, url, description, response_time, reponse_bytes
+        msg = "{0}OK: Query '{1}' matches on {2} {3} | time={4}s;;;0.000000 size={5}B;;;0".format(
+            message, ok_query, url, description, response_time, reponse_bytes
         )
         rc=0
     else:
-        msg = "UNKNOWN: '{0}', '{1}' and '{2}' doesn't match on {3} {4} | time={5}s;;;0.000000 size={6}B;;;0".format(
-            'OK Query: '+ok_query, 'Warning Query: '+warning_query, 'Error Query: '+error_query, url, description, response_time, reponse_bytes
+        msg = "{0}UNKNOWN: '{1}', '{2}' and '{3}' doesn't match on {4} {5} | time={6}s;;;0.000000 size={7}B;;;0".format(
+            message, 'OK Query: '+ok_query, 'Warning Query: '+warning_query, 'Error Query: '+error_query, url, description, response_time, reponse_bytes
         )
         rc=3
 
