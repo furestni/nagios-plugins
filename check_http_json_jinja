@@ -65,7 +65,7 @@ def main():
         rc=3
 
     for metric in metrics:
-        msg+=" "+Template(metric).render(json=r.json(),headers=r.headers,text=r.text,status=r.status_code)
+        msg+=" "+Template(metric).render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)
     
     print(msg)
 
