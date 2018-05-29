@@ -28,6 +28,11 @@ def main():
     r = requests.get(url, headers=headers)
 
     try:
+        r_json = r.json()
+    except ValueError:
+        r_json = ({})
+
+    try:
         response_time = r.elapsed.total_seconds()
         reponse_bytes = r.headers.get('Content-Length') or 0
     except:
@@ -38,17 +43,17 @@ def main():
         description = '\nResponse: ' + r.text
 
 
-    if(Template("{{ "+error_query+" }}").render(json=r.json(),headers=r.headers,text=r.text,status=r.status_code)=='True'):
+    if(Template("{{ "+error_query+" }}").render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)=='True'):
         msg = "ERROR: Query '{0}' matches on {1} {2} | time={3}s;;;0.000000 size={4}B;;;0".format(
             error_query, url, description, response_time, reponse_bytes
         )
         rc=2
-    elif(Template("{{ "+warning_query+" }}").render(json=r.json(),headers=r.headers,text=r.text,status=r.status_code)=='True'):
+    elif(Template("{{ "+warning_query+" }}").render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)=='True'):
         msg = "WARNING: Query '{0}' matches on {1} {2} | time={3}s;;;0.000000 size={4}B;;;0".format(
             warning_query, url, description, response_time, reponse_bytes
         )
         rc=1
-    elif(Template("{{ "+ok_query+" }}").render(json=r.json(),headers=r.headers,text=r.text,status=r.status_code)=='True'):
+    elif(Template("{{ "+ok_query+" }}").render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)=='True'):
         msg = "OK: Query '{0}' matches on {1} {2} | time={3}s;;;0.000000 size={4}B;;;0".format(
             ok_query, url, description, response_time, reponse_bytes
         )
