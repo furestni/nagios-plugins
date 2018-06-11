@@ -23,6 +23,7 @@ my $tsNow;
 my %opt;
 my $msg = "?";
 my $rc = 3;
+my $result_code;
 my $resultMsg = "UNKNOWN";
 my $schedule_ref;
 my $apiOpt_ref;
@@ -283,7 +284,7 @@ $apiOpt_ref->{'to'}   = $opt{'livevonly'} == 1 ? genTimeStr(localtime(time+300))
 $apiOpt_ref->{'isLiveOnly'} = $opt{'livevonly'} == 1 ? "true" : "false";
 
 
-$schedule_ref = fetchJSONData (
+($result_code, $schedule_ref) = fetchJSONData (
 	$opt{'apiserver'}, 
 	$opt{'path'},
 	$apiOpt_ref,
@@ -292,16 +293,20 @@ $schedule_ref = fetchJSONData (
 	$opt{'debug'}
 );
 
-listEvents ($schedule_ref) if $opt{'debug'};
+if ($result_code != 200) {
+	$resultMsg = sprintf("status code %s from %s\n", $result_code, $opt{'apiserver'}.$opt{'path'});
+	$rc = 3;
+} else {
+	listEvents ($schedule_ref) if $opt{'debug'};
+	my $result = checkEvents(addCheckInformation($schedule_ref, $opt{'streamserver'}),$tsNow);
 
-my $result = checkEvents(addCheckInformation($schedule_ref, $opt{'streamserver'}),$tsNow);
+	listEvents($result) if $opt{'verbose'};
 
-listEvents($result) if $opt{'verbose'};
+	#print to_json($result);
+	print Dumper (\$result) if $opt{'debug'};
 
-#print to_json($result);
-print Dumper (\$result) if $opt{'debug'};
-
-($rc, $resultMsg) = icingaResult($result);
+	($rc, $resultMsg) = icingaResult($result);
+}
 
 # Results:
 print $resultMsg;
