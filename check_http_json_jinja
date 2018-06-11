@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+
+from jinja2 import Template
+import argparse
+import requests
+import sys
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--url', required=True, help='url of the json api')
+    parser.add_argument('--ok', required=True, help='ok query')
+    parser.add_argument('--warning', required=True, help='warning query')
+    parser.add_argument('--error', required=True, help='error query')
+    parser.add_argument('--message', required=False, help='message')
+    parser.add_argument('--description', default=False, action='store_true', help='print the full json return value with the status message')
+    parser.add_argument('--header', action='append', default=[], help='adds http headers for the request')
+    parser.add_argument('--metric', action='append', default=[], help='performance data jinja expression Example: avg_requests={{ json.avg }}')
+    args = parser.parse_args()
+    url=args.url
+    ok_query=args.ok
+    warning_query=args.warning
+    error_query=args.error
+    verbose = args.description
+    metrics = args.metric
+    headers = dict(item.split(': ') for item in args.header)
+    
+    description = ''
+
+    r = requests.get(url, headers=headers)
+
+    try:
+        r_json = r.json()
+    except ValueError:
+        r_json = ({})
+
+    try:
+        response_time = r.elapsed.total_seconds()
+        reponse_bytes = r.headers.get('Content-Length') or 0
+    except:
+        response_time = 0.0
+        reponse_bytes = 0
+
+    if verbose:
+        description = '\nResponse: ' + r.text
+
+    if args.message:
+        message = Template(args.message).render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)+' \n'
+    else:
+        message = ''
+    
+    if(Template("{{ "+error_query+" }}").render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)=='True'):
+        msg = "{0}ERROR: Query '{1}' matches on {2} {3} | time={4}s;;;0.000000 size={5}B;;;0".format(
+            message, error_query, url, description, response_time, reponse_bytes
+        )
+        rc=2
+    elif(Template("{{ "+warning_query+" }}").render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)=='True'):
+        msg = "{0}WARNING: Query '{1}' matches on {2} {3} | time={4}s;;;0.000000 size={5}B;;;0".format(
+            message, warning_query, url, description, response_time, reponse_bytes
+        )
+        rc=1
+    elif(Template("{{ "+ok_query+" }}").render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)=='True'):
+        msg = "{0}OK: Query '{1}' matches on {2} {3} | time={4}s;;;0.000000 size={5}B;;;0".format(
+            message, ok_query, url, description, response_time, reponse_bytes
+        )
+        rc=0
+    else:
+        msg = "{0}UNKNOWN: '{1}', '{2}' and '{3}' doesn't match on {4} {5} | time={6}s;;;0.000000 size={7}B;;;0".format(
+            message, 'OK Query: '+ok_query, 'Warning Query: '+warning_query, 'Error Query: '+error_query, url, description, response_time, reponse_bytes
+        )
+        rc=3
+
+    for metric in metrics:
+        msg+=" "+Template(metric).render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)
+    
+    print(msg)
+
+    sys.exit(rc)
+
+
+
+if __name__ == "__main__":
+    main()
