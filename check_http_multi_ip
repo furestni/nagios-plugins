@@ -56,6 +56,7 @@ def main():
 
     errors = []
     success = False
+    unknowns = []
     headers = {'host': hostname}
     for ip in ips:
         try:
@@ -72,24 +73,32 @@ def main():
                 if body_string in content:
                     success = True
         except requests.exceptions.Timeout:
-            errors.append("HTTP to %s timed out" % url)
+            unknowns.append("HTTP to %s timed out" % url)
         except requests.exceptions.TooManyRedirects:
-            errors.append("Too many redirects for %s " % url)
+            unknowns.append("Too many redirects for %s " % url)
         except requests.exceptions.RequestException as e:
-            errors.append(str(e))
+            unknowns.append(str(e))
         except Exception as e:
-            errors.append(str(e))
+            unknowns.append(str(e))
 
     if not success:
         if errors:
             print("ERROR: %s" % ', '.join(errors))
+            sys.exit(2)
+        elif unknowns:
+            print("UNKNOWN: %s" % ', '.join(unknowns))
+            sys.exit(3)
         else:
             print("ERROR: string '%s' not found in HTTP response on any of the following IPs %s" % (body_string, ','.join(ips)))
-        sys.exit(2)
+            sys.exit(2)
+
     else:
         if errors:
             print("WARNING: %s" % ', '.join(errors))
             sys.exit(1)
+        elif unknowns:
+            print("UNKNOWN: %s" % ', '.join(unknowns))
+            sys.exit(3)
         else:
             print("OK: ALL GOOD")
             sys.exit(0)
