@@ -19,28 +19,22 @@ def main():
     parser.add_argument('--protocol', default='https', help='Protocol to be used, default https')
     parser.add_argument('--port', type=int, default=443, help='Port used, default 443')
     parser.add_argument('--host', default="localhost", help='Host, default localhost')
-    parser.add_argument('--filter', default="", help='Icinga2 filter')
     parser.add_argument('--username', help='Icinga2 username')
-    parser.add_argument('--password', help='Icinga2 password')
+    parser.add_argument('--password', default="", help='Icinga2 password')
 
     args = parser.parse_args()
 
     headers = {
-        'Accept': "application/json",
-        'X-HTTP-Method-Override': "GET",
+        'Accept': 'application/json',
+        'X-HTTP-Method-Override': 'GET',
     }
     url = "%s://%s:%s/v1/objects/services" % (args.protocol, args.host, args.port)
 
-    filter = args.filter
-
     data = {
-        'pretty': True,
-        'attrs': ['__name', 'state'],
-        'joins': ['hosts'],
+        'attrs': ['name', 'state'],
+        'joins': ['host.name'],
+        'filter': 'match("CloudStack Router Rebooted Unconfigured", service.name)'
     }
-
-    if filter:
-        data['filter'] = filter
 
     resp = requests.post(url, headers=headers, auth=(args.username, args.password), data=json.dumps(data), verify=False)
 
