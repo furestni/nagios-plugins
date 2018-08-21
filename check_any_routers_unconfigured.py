@@ -31,27 +31,30 @@ def main():
     url = "%s://%s:%s/v1/objects/services" % (args.protocol, args.host, args.port)
 
     data = {
-        'attrs': ['name', 'state'],
         'joins': ['host.name'],
         'filter': 'match("CloudStack Router Rebooted Unconfigured", service.name)'
     }
 
     resp = requests.post(url, headers=headers, auth=(args.username, args.password), data=json.dumps(data), verify=False)
 
-    count_results = 0
-    count_errors = 0
+    routers_list = []
+    routers_in_error_state_list = []
 
     if resp.status_code == 200:
         for result in resp.json().get('results') or []:
-            count_results = count_results + 1
-            if result.get('attrs').get('state'):
-                count_errors = count_errors + 1
+            host_name = result.get('attrs').get('host_name')
+            routers_list.append(host_name)
+            if result.get('attrs').get('last_hard_state') == 2:
+                routers_in_error_state_list.append(host_name)
     else:
         print("UNKNOWN: URL %s returned %s" % (url, resp.status_code))
         sys.exit(3)
 
-    if count_errors:
-        print("ERROR: %s of %s routers unhealthy" % (count_errors, count_results))
+    count_results = len(routers_list)
+    error_count_results = len(routers_in_error_state_list)
+
+    if len(routers_in_error_state_list) > 0:
+        print("ERROR: %s of %s routers unhealthy: %s" % (error_count_results, count_results, ', '.join(routers_in_error_state_list)))
         sys.exit(2)
 
     if not count_results:
