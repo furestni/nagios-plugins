@@ -177,7 +177,7 @@ def main():
 
     baseurl = "http://" + options.servername + ":" + str(options.port) + "/"
 
-    url = baseurl + "_all/pcache/_search?pretty"
+    url = baseurl + "pcache-*/pcache/_search?pretty"
     query = build_query(options.volumekey, options.time)
     res = fetch(url, query)
 
