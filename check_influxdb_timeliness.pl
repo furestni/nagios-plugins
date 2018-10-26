@@ -79,7 +79,7 @@ GetOptions (
 	"db=s"		 => \$opt{'db'},
 	"help|?"     => \$opt{'help'},
 	"man"        => \$opt{'man'},
-) or pos2usage(2);
+) or pod2usage(2);
 
 pod2usage(1) if $opt{'help'};
 pod2usage(-exitval => 0, -verbose => 2) if $opt{'man'};
