@@ -32,7 +32,7 @@ def main():
 
     data = {
         'joins': ['host.name'],
-        'filter': 'match("CloudStack Router Rebooted Unconfigured", service.name)'
+        'filter': 'match("CloudStack Router Rebooted Unconfigured", service.name)||match("CloudStack Router Uptime", service.name)'
     }
 
     resp = requests.post(url, headers=headers, auth=(args.username, args.password), data=json.dumps(data), verify=False)
@@ -54,14 +54,14 @@ def main():
     error_count_results = len(routers_in_error_state_list)
 
     if len(routers_in_error_state_list) > 0:
-        print("ERROR: %s of %s routers unhealthy: %s" % (error_count_results, count_results, ', '.join(routers_in_error_state_list)))
+        print("ERROR: %s of %s router services unhealthy on %s" % (error_count_results, count_results, ', '.join(set(routers_in_error_state_list))))
         sys.exit(2)
 
     if not count_results:
         print("WARNING: no results, filter?")
         sys.exit(1)
 
-    print("OK: %s routers healthy" % count_results)
+    print("OK: %s router services healthy" % count_results)
     sys.exit(0)
 
 
