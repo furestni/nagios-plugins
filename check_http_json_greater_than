@@ -19,6 +19,7 @@ def main():
     parser.add_argument('--description', default=False, action='store_true', help='print the full json return value with the status message')
     parser.add_argument('--insecure', default=False, help='Allow connections to SSL sites without certs')
     parser.add_argument('--header', action='append', default=[], help='adds http headers for the request')
+    parser.add_argument('--timeout', type=int, default=60, help='Timeouts in seconds, default: 60')
     args = parser.parse_args()
     url = args.url
     key = args.key
@@ -27,15 +28,25 @@ def main():
     warning_value = args.warning_value
     verbose = args.description
     verify = not args.insecure
+    timeout = args.timeout
     headers = dict(item.split(': ') for item in args.header)
 
     description = ''
 
-    r = requests.get(url, verify=verify, headers=headers)
+    try:
+        r = requests.get(url, verify=verify, headers=headers, timeout=timeout)
+    except Exception as e:
+        print "ERROR: unexpected error while HTTP requesting %s: %s" % (url, e)
+        sys.exit(2)
+
     if verbose:
         description = 'value: ' + r.text
 
-    data_list = r.json()
+    try:
+        data_list = r.json()
+    except ValueError as e:
+        print "ERROR: unexpected response: %s" % e
+        sys.exit(2)
     try:
         response_time = r.elapsed.total_seconds()
         reponse_bytes = r.headers.get('Content-Length') or 0
