@@ -5,6 +5,9 @@ import argparse
 import requests
 import sys
 
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--url', required=True, help='url of the json api')
@@ -13,6 +16,7 @@ def main():
     parser.add_argument('--error', required=True, help='error query')
     parser.add_argument('--message', required=False, help='message')
     parser.add_argument('--description', default=False, action='store_true', help='print the full json return value with the status message')
+    parser.add_argument('--insecure', default=False, help='Allow connections to SSL sites without certs')
     parser.add_argument('--header', action='append', default=[], help='adds http headers for the request')
     parser.add_argument('--metric', action='append', default=[], help='performance data jinja expression Example: avg_requests={{ json.avg }}')
     args = parser.parse_args()
@@ -20,13 +24,14 @@ def main():
     ok_query=args.ok
     warning_query=args.warning
     error_query=args.error
+    verify = not args.insecure
     verbose = args.description
     metrics = args.metric
     headers = dict(item.split(': ') for item in args.header)
     
     description = ''
 
-    r = requests.get(url, headers=headers)
+    r = requests.get(url, headers=headers, verify=verify)
 
     try:
         r_json = r.json()
@@ -47,7 +52,7 @@ def main():
         message = Template(args.message).render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)+' \n'
     else:
         message = ''
-    
+    print(r_json)
     if(Template("{{ "+error_query+" }}").render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)=='True'):
         msg = "{0}ERROR: Query '{1}' matches on {2} {3} | time={4}s;;;0.000000 size={5}B;;;0".format(
             message, error_query, url, description, response_time, reponse_bytes
