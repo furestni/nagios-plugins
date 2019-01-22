@@ -52,7 +52,6 @@ def main():
         message = Template(args.message).render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)+' \n'
     else:
         message = ''
-    print(r_json)
     if(Template("{{ "+error_query+" }}").render(json=r_json,headers=r.headers,text=r.text,status=r.status_code)=='True'):
         msg = "{0}ERROR: Query '{1}' matches on {2} {3} | time={4}s;;;0.000000 size={5}B;;;0".format(
             message, error_query, url, description, response_time, reponse_bytes
