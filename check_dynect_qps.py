@@ -7,28 +7,30 @@ import json
 import datetime
 import time
 import requests
+import math
 from optparse import OptionParser
 from urllib.parse import urljoin
 
 __program__ = "check_dynect_qps"
-__version__ = "0.1"
+__version__ = "0.2"
 
 baseurl = "https://api.dynect.net/"
-offset = 30
-poll = 10
+
+# It is worth rewind a little bit as Dyn reports are "near realtime",
+# and requesting samples in the last 5 minutes would be incomplete,
+# due to data granularity.
+offset = 10
+
+# Empirically, the report generation lasts at least 30 seconds,
+# with an average of 1-2 minutes...
+poll = 20
 
 
-######################################################################
-# print version
-######################################################################
 def version():
     p = "{0} v{1}\n".format(__program__, __version__)
     sys.stdout.write(p)
 
 
-######################################################################
-# read opts
-######################################################################
 def getopts():
     program = os.path.basename(sys.argv[0])
 
@@ -51,15 +53,9 @@ def getopts():
                       action="store", type="int", default=5,
                       help="timerange in minutes",
                       metavar="TIME")
-    parser.add_option("-g", "--granularity", dest="granularity",
-                      action="store_true", default=False,
-                      help="use granularity to get real gps")
     return parser
 
 
-######################################################################
-# login
-######################################################################
 def login(customer, user, password):
     body = {}
     try:
@@ -79,9 +75,6 @@ def login(customer, user, password):
     return token
 
 
-######################################################################
-# fetch qps report link
-######################################################################
 def fetch_qps_report_ressource(token, timegap):
     total_wait = 0
     now = datetime.datetime.now()
@@ -122,22 +115,33 @@ def fetch_qps_report_ressource(token, timegap):
                     total_wait += poll
         else:
             body = r.json()
-        report = body['data']['csv']
+
+        if body['status'] == 'success':
+            report = body['data']['csv']
+        else:
+            sys.stdout.write("ERROR: satus=%s : %s " % (body['status'], str(body)))
+            sys.exit(3)
+
     except Exception as e:
         sys.stdout.write("ERROR: url: %s %s " % (url, str(body)))
         sys.exit(3)
     return (report,total_wait)
 
 
-######################################################################
-# fetch qps report
-######################################################################
-def extract_latest_qps(report):
+def extract_qps_stats(report):
     ts_index = 0
     qps_index = 0
-    row_count = 0
+    valid_rows_count = 0
     ts = 0
     qps = 0
+    qps_max = 0
+
+    # QPS granularity depends on requested time frame
+    # The two first timestamps will be used to compute the granularity.
+    # See also https://help.dyn.com/create-qps-report-api/
+    granularity = 300 # safe default, since granularity is 5-minutes up to a span of 24 hours
+    ts_1 = 0
+    ts_2 = 0
 
     reader = csv.reader(report.split('\n'), delimiter=',')
 
@@ -149,24 +153,29 @@ def extract_latest_qps(report):
                     ts_index = ic
                 elif col.lower() == "queries":
                     qps_index = ic
-        elif len(row) > 0:
+        elif len(row) >= 2:
+            if ir == 1:
+                ts_1 = int(row[ts_index])
+            if ir == 2:
+                ts_2 = int(row[ts_index])
+                if ts_1 > 0:
+                    granularity = ts_2 - ts_1
+
             ts_temp = int(row[ts_index])
             qps_temp = int(row[qps_index])
-            if ts_temp > ts:
-                ts = ts_temp
-                qps = qps_temp
-            row_count = ir
+            if qps_temp > 0:
+                qps += qps_temp
+                valid_rows_count += 1
+                if qps_temp > qps_max:
+                    qps_max = qps_temp
 
-    if row_count < 1:
+    if valid_rows_count < 1:
         sys.stdout.write("ERROR: No measure points found in report")
         sys.exit(3)
 
-    return qps
+    return math.floor(qps / valid_rows_count / granularity), math.floor(qps_max / granularity)
 
 
-######################################################################
-# execute
-######################################################################
 def main():
     parser = getopts()
     (options, args) = parser.parse_args()
@@ -174,13 +183,9 @@ def main():
     token = login(options.customer, options.user, options.password)
     report,total_wait = fetch_qps_report_ressource(token, options.time)
 
-    qps = extract_latest_qps(report)
+    qps, qps_max = extract_qps_stats(report)
 
-    # QPS granularity is 5 minutes by default
-    if options.granularity:
-        qps = qps / 300
-
-    sys.stdout.write("Current QPS: {0} | qps={0}, report_time={1}".format(qps,str(total_wait)))
+    sys.stdout.write("Average QPS (over the last {0}min): {1} | qps_avg={1}, qps_max={2}, report_time={3}".format(options.time, qps, qps_max, total_wait))
     sys.exit(0)
 
 
