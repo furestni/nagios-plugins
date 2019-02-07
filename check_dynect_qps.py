@@ -15,7 +15,7 @@ __version__ = "0.1"
 
 baseurl = "https://api.dynect.net/"
 offset = 30
-poll = 1
+poll = 10
 
 
 ######################################################################
@@ -83,6 +83,7 @@ def login(customer, user, password):
 # fetch qps report link
 ######################################################################
 def fetch_qps_report_ressource(token, timegap):
+    total_wait = 0
     now = datetime.datetime.now()
 
     end = now - datetime.timedelta(minutes=offset)
@@ -118,13 +119,14 @@ def fetch_qps_report_ressource(token, timegap):
                     loop = False
                 else:
                     time.sleep(poll)
+                    total_wait += poll
         else:
             body = r.json()
         report = body['data']['csv']
     except Exception as e:
         sys.stdout.write("ERROR: url: %s %s " % (url, str(body)))
         sys.exit(3)
-    return report
+    return (report,total_wait)
 
 
 ######################################################################
@@ -170,14 +172,15 @@ def main():
     (options, args) = parser.parse_args()
 
     token = login(options.customer, options.user, options.password)
-    report = fetch_qps_report_ressource(token, options.time)
+    report,total_wait = fetch_qps_report_ressource(token, options.time)
+
     qps = extract_latest_qps(report)
 
     # QPS granularity is 5 minutes by default
     if options.granularity:
         qps = qps / 300
 
-    sys.stdout.write("Current QPS: {0} | qps={0}".format(qps))
+    sys.stdout.write("Current QPS: {0} | qps={0}, report_time={1}".format(qps,str(total_wait)))
     sys.exit(0)
 
 
