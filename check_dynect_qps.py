@@ -185,7 +185,7 @@ def main():
 
     qps, qps_max = extract_qps_stats(report)
 
-    sys.stdout.write("Average QPS (over the last {0}min): {1} | qps_avg={1}, qps_max={2}, report_time={3}".format(options.time, qps, qps_max, total_wait))
+    sys.stdout.write("Average QPS (over the last {0}min): {1} | qps_avg={1} qps_max={2} report_time={3}".format(options.time, qps, qps_max, total_wait))
     sys.exit(0)
 
 
