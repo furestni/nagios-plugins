@@ -14,6 +14,11 @@ from urllib.parse import urljoin
 __program__ = "check_dynect_qps"
 __version__ = "0.2"
 
+STATUS_OK = 0
+STATUS_WARNING = 1
+STATUS_CRITICAL = 2
+STATUS_UNKNOWN = 3
+
 baseurl = "https://api.dynect.net/"
 
 # It is worth rewind a little bit as Dyn reports are "near realtime",
@@ -53,6 +58,13 @@ def getopts():
                       action="store", type="int", default=5,
                       help="timerange in minutes",
                       metavar="TIME")
+    parser.add_option('-W', '--warning', dest="warning",
+                      action="store", type="int", default=None,
+                      help="warning threshold in percent, unused by default")
+    parser.add_option('-C', '--critical', dest="critical",
+                      action="store", type="int", default=None,
+                      help="critical threshold in percent, unused by default")
+
     return parser
 
 
@@ -70,8 +82,8 @@ def login(customer, user, password):
         body = r.json()
         token = body['data']['token']
     except Exception as e:
-        sys.stdout.write("ERROR: url: %s %s " % (url, str(body)))
-        sys.exit(3)
+        sys.stdout.write("ERROR %s:\nURL: %s\nBody: %s " % (e, url, str(body)))
+        sys.exit(STATUS_UNKNOWN)
     return token
 
 
@@ -120,11 +132,11 @@ def fetch_qps_report_ressource(token, timegap):
             report = body['data']['csv']
         else:
             sys.stdout.write("ERROR: satus=%s : %s " % (body['status'], str(body)))
-            sys.exit(3)
+            sys.exit(STATUS_UNKNOWN)
 
     except Exception as e:
-        sys.stdout.write("ERROR: url: %s %s " % (url, str(body)))
-        sys.exit(3)
+        sys.stdout.write("ERROR %s:\nURL: %s\nBody: %s " % (e, url, str(body)))
+        sys.exit(STATUS_UNKNOWN)
     return (report,total_wait)
 
 
@@ -171,12 +183,19 @@ def extract_qps_stats(report):
 
     if valid_rows_count < 1:
         sys.stdout.write("ERROR: No measure points found in report")
-        sys.exit(3)
+        sys.exit(STATUS_UNKNOWN)
 
     return math.floor(qps / valid_rows_count / granularity), math.floor(qps_max / granularity)
 
 
+def xstr(s):
+    if s is None:
+        return ''
+    return str(s)
+
 def main():
+    exitcode = STATUS_UNKNOWN
+
     parser = getopts()
     (options, args) = parser.parse_args()
 
@@ -185,8 +204,17 @@ def main():
 
     qps, qps_max = extract_qps_stats(report)
 
-    sys.stdout.write("Average QPS (over the last {0}min): {1} | qps_avg={1} qps_max={2} report_time={3}".format(options.time, qps, qps_max, total_wait))
-    sys.exit(0)
+    exitcode = STATUS_OK
+    if options.critical and qps >= options.critical:
+        exitcode = STATUS_CRITICAL
+    elif options.warning and qps >= options.warning:
+        exitcode = STATUS_WARNING
+
+    ## Performance indicators: 'label'=value[UOM];[warn];[crit];[min];[max]
+    sys.stdout.write(
+        "Average QPS (over the last {period}min): {avg} | qps_avg={avg};{warn};{crit};0; qps_max={max};{warn};{crit};0; report_time={wait}".format(
+            period=options.time, avg=qps, max=qps_max, wait=total_wait, warn=xstr(options.warning), crit=xstr(options.critical)))
+    sys.exit(exitcode)
 
 
 if __name__ == "__main__":
