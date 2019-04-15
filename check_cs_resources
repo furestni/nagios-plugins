@@ -1,0 +1,93 @@
+#!/usr/bin/python3
+
+import sys
+import argparse
+
+try:
+    from cs import CloudStack, CloudStackException, read_config
+except ImportError:
+    print('python library required: cs')
+    sys.exit(1)
+
+
+def check():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--project')
+    parser.add_argument('--account')
+    parser.add_argument('--zone')
+    args = parser.parse_args()
+
+    try:
+        if not (args.project or args.account) or not args.zone:
+            return 3, "Missing arguments: --project/--account or --zone"
+
+        cs = CloudStack(**read_config())
+
+        zones = cs.listZones(name=args.zone)
+
+        if not zones:
+            return 3, "Zone not found"
+        zone = zones['zone'][0]
+
+        result = None
+
+        vms_result = []
+        if args.project:
+            projects = cs.listProjects(name=args.project, listall=True)
+            if not projects:
+                return 3, "Project not found"
+            project = projects['project'][0]
+            vms_result = cs.listVirtualMachines(projectid=project['id'])
+        else:
+            accounts = cs.listAccounts(name=args.account, listall=True)
+            if not accounts:
+                return 3, "Account not found"
+            account = accounts['account'][0]
+            vms_result = cs.listVirtualMachines(account=account['name'], domainid=account['domainid'])
+
+        result = {}
+        result['vm_running'] = 0
+        result['vm_stopped'] = 0
+        result['vm_total'] = 0
+        result['cpu_total'] = 0
+        result['cpu_avg'] = 0
+        result['memory_total'] = 0
+        result['memory_avg'] = 0
+
+        perf = ""
+
+        if vms_result:
+            vms = vms_result.get('virtualmachine', [])
+            for vm in vms:
+                result['cpu_total'] = result['cpu_total'] + vm.get('cpunumber', 0)
+                result['memory_total'] = result['memory_total'] + vm.get('memory', 0)
+                if vm.get('state') in ("Running", "Starting"):
+                    result['vm_running'] += 1
+                else:
+                    result['vm_stopped'] += 1
+
+            result['memory_total'] = result['memory_total'] / 1024
+            result['memory_avg'] = result['memory_total'] / float(len(vms))
+            result['vm_total'] = len(vms)
+            result['cpu_avg'] = result['cpu_total'] / float(len(vms))
+
+            for key, value in result.items():
+                perf = "%s %s=%s" % (perf, key, value)
+
+        return 0, "OK | %s" % perf
+
+    except CloudStackException as e:
+        return 3, "CloudStackException: %s" % str(e)
+
+
+def main():
+
+    (exitcode, out) = check()
+
+    sys.stdout.write("{0}\n".format(out))
+    sys.exit(exitcode)
+
+
+if __name__ == "__main__":
+    main()

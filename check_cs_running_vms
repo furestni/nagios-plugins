@@ -1,0 +1,66 @@
+#!/usr/bin/python
+
+import sys
+import argparse
+
+try:
+    from cs import CloudStack, CloudStackException, read_config
+except ImportError:
+    print 'python library required: cs'
+    sys.exit(1)
+
+
+def check():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--project')
+    parser.add_argument('--zone')
+    args = parser.parse_args()
+
+    try:
+        if not args.project or not args.zone:
+            return 3, "Missing arguments: --project or --zone"
+
+        cs = CloudStack(**read_config())
+
+        zones = cs.listZones(name=args.zone)
+        if not zones:
+            return 3, "Zone not found"
+        zone = zones['zone'][0]
+
+        projects = cs.listProjects(name=args.project,listall=True)
+        if not projects:
+            return 3, "Project not found"
+        project = projects['project'][0]
+
+        count_vms_running = 0
+        if 'vmrunning' in project:
+            count_vms_running = project['vmrunning']
+
+        count_vms_stopped = 0
+        if 'vmstopped' in project:
+            count_vms_stopped = project['vmstopped']
+
+        factor = float(count_vms_running + 1) / float(count_vms_stopped + 1)
+
+        if factor >= 0.8:
+            return 0, 'OK factor %s | vms_running=%s vms_stopped=%s' % (factor, count_vms_running, count_vms_stopped)
+
+        elif factor <= 0.2:
+            return 1, 'WARNING factor %s VMs running / stopped | vms_running=%s vms_stopped=%s' % (factor, count_vms_running, count_vms_stopped)
+
+        else:
+            return 0, 'OK factor %s VMs running < stopped | vms_running=%s vms_stopped=%s' % (factor, count_vms_running, count_vms_stopped)
+
+    except CloudStackException, e:
+        return 3, "CloudStackException: %s" % str(e)
+
+def main():
+
+    (exitcode, out) = check()
+
+    sys.stdout.write("{0}\n".format(out))
+    sys.exit(exitcode)
+
+if __name__ == "__main__":
+    main()

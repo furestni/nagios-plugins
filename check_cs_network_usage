@@ -1,0 +1,92 @@
+#!/usr/bin/python3
+
+import sys
+import argparse
+from datetime import *
+import pytz
+
+try:
+    from cs import CloudStack, CloudStackException, read_config
+except ImportError:
+    print('python library required: cs')
+    sys.exit(1)
+
+
+def check():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--project')
+    parser.add_argument('--account')
+    parser.add_argument('--zone')
+    args = parser.parse_args()
+
+    try:
+        if not (args.project or args.account) or not args.zone:
+            return 3, "Missing arguments: --project/account or --zone"
+
+        cs = CloudStack(**read_config())
+
+        zones = cs.listZones(name=args.zone)
+        if not zones:
+            return 3, "Zone not found"
+        zone = zones['zone'][0]
+        project = None
+        account = None
+
+        if args.project:
+            projects = cs.listProjects(name=args.project, listall=True)
+            if not projects:
+                return 3, "Project not found"
+            project = projects['project'][0]
+            routers = cs.listRouters(listall=True, projectid=project['id'])
+        else:
+            accounts = cs.listAccounts(name=args.account, listall=True)
+            if not accounts:
+                return 3, "Account not found"
+            account = accounts['account'][0]
+            routers = cs.listRouters(listall=True, accountid=account['id'])
+
+        if not routers:
+            return 3, "Router not found"
+
+        router = routers['router'][0]
+
+        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
+
+        router_created_date = datetime.strptime(router['created'], "%Y-%m-%dT%H:%M:%S%z")
+        if yesterday < router_created_date:
+            return 0, "OK, Router has just been created"
+
+        args = {}
+        args['startdate'] = yesterday.strftime('%Y-%m-%d')
+        args['enddate'] = yesterday.strftime('%Y-%m-%d')
+        args['zoneid'] = zone['id']
+        if project:
+            args['projectid'] = project['id']
+        else:
+            args['accountid'] = account['id']
+        args['type'] = 4
+
+        usage_records = cs.listUsageRecords(**args)
+
+        if not usage_records:
+            msg = "WARNING: No network usage for day %s" % yesterday
+            return 1, msg
+
+        bytes_sent = usage_records['usagerecord'][0]['rawusage']
+        return 0, 'OK bytes sent %s on %s | bytes_sent=%s ' % (bytes_sent, yesterday.strftime('%Y-%m-%d'), bytes_sent)
+
+    except CloudStackException as e:
+        return 3, "CloudStackException: %s" % str(e)
+
+
+def main():
+
+    (exitcode, out) = check()
+
+    sys.stdout.write("{0}\n".format(out))
+    sys.exit(exitcode)
+
+
+if __name__ == "__main__":
+    main()

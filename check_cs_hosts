@@ -1,0 +1,65 @@
+#!/usr/bin/python3
+
+import sys
+
+
+try:
+    from cs import CloudStack, CloudStackException, read_config
+except ImportError:
+    print('python library required: cs')
+    sys.exit(1)
+
+
+def check():
+    try:
+        cs = CloudStack(**read_config())
+
+        hosts = cs.listHosts(type='Routing')
+        count = hosts.get('count', 0)
+
+        ok = []
+        warning = []
+        error = []
+        unknown = []
+
+        for host in hosts['host']:
+            if host['state'].lower() in ['alert', 'error']:
+                error.append(host['name'] + '->' + host['type'] + '->' + host['state'])
+
+            elif host['state'].lower() not in ['up']:
+                warning.append(host['name'] + '->' + host['type'] + '->' + host['state'])
+
+            elif host['resourcestate'].lower() not in ['enabled']:
+                warning.append(host['name'] + '->' + host['type'] + '->' + host['resourcestate'])
+
+            elif host['state'].lower() in ['up']:
+                ok.append(host['name'])
+
+            else:
+                unknown.append(host['name'] + '->' + host['type'] + '->' + host['state'])
+
+        if error:
+            return 2, 'ERROR: ' + ','.join(error)
+
+        elif warning:
+            return 1, 'WARNING: ' + ','.join(warning)
+
+        elif unknown:
+            return 3, 'UNKNOWN: ' + ','.join(unknown)
+
+        else:
+            return 0, 'OK (%s hosts)' % count
+
+    except CloudStackException as e:
+        return 3, "CloudStackException: %s" % str(e)
+
+
+def main():
+
+    (exitcode, out) = check()
+
+    sys.stdout.write("{0}\n".format(out))
+    sys.exit(exitcode)
+
+if __name__ == "__main__":
+    main()
