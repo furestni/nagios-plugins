@@ -88,7 +88,7 @@ def main():
 
         req.raise_for_status() # raise exception on unsuccessfull http requests (like 404, 403, 500 etc)
         json_resp = json.loads(req.content)
-        print(req.status_code)
+        #print(req.status_code)
         streams = json_resp['incomingStreams']
         sys.exit(check_streams(streams, args))
 
