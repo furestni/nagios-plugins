@@ -18,6 +18,8 @@ import sys
 import json
 import requests
 
+from requests.auth import HTTPDigestAuth
+
 ### defaults
 wowza_api_request_header = { 'Accept': 'application/json' }
 
@@ -40,6 +42,8 @@ def parse_cmdln_args():
                          help='User used to connect to the Wowza-API.', required=False)
     parser.add_argument( '-p', '--password', action='store', dest='wowza_passwd', default='',
                          help='Password for the Wowza-API user.', required=False)
+    parser.add_argument( '-d', '--digest', action='store', dest='wowza_use_digest_auth', type=bool, default=True,
+                         help='Use digest authentication instead of basic.', required=False)
     parser.add_argument( '-e', '--err-code', action='store', type=int, dest='err_code', default=2,
                          help='Error code when at least one stream is not found or not connected.', required=False)
 
@@ -82,7 +86,10 @@ def main():
 
     try:
         if args.wowza_user:
-            req = requests.get( wowza_api_endpoint, auth=(args.wowza_user, args.wowza_passwd), headers=wowza_api_request_header )
+            if args.wowza_use_digest_auth == True:
+                req = requests.get( wowza_api_endpoint, auth=HTTPDigestAuth(args.wowza_user, args.wowza_passwd), headers=wowza_api_request_header )
+            else:
+                req = requests.get( wowza_api_endpoint, auth=(args.wowza_user, args.wowza_passwd), headers=wowza_api_request_header )
         else:
             req = requests.get( wowza_api_endpoint, headers=wowza_api_request_header )
 
