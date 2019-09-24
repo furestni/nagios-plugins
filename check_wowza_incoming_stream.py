@@ -40,7 +40,7 @@ def parse_cmdln_args():
                          help='List of stream names to check.', required=True)
     parser.add_argument( '-u', '--user', action='store', dest='wowza_user', default='',
                          help='User used to connect to the Wowza-API.', required=False)
-    parser.add_argument( '-p', '--password', action='store', dest='wowza_passwd', default='',
+    parser.add_argument( '-p', '--passwd', action='store', dest='wowza_passwd', default='',
                          help='Password for the Wowza-API user.', required=False)
     parser.add_argument( '-d', '--digest', action='store', dest='wowza_use_digest_auth', type=bool, default=True,
                          help='Use digest authentication instead of basic.', required=False)
