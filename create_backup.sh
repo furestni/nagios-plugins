@@ -1,5 +1,23 @@
 #!/bin/bash
 # Backup of Fortigate
+#NOTE!! 
+#1 – Enable SSH on the Interface you’ll connect to.
+#config system interface
+#edit
+#set allowaccess ping https ssh
+#end
+
+#2 – Enable SCP on the Fortigate
+#config system global
+#set admin-scp enable
+#end
+
+#3 – Create a READ-ONLY Admin user
+#config system admin
+#edit BACKUP_USER
+#set password XXXXXXX
+#set accprofile Read-Only
+#set trusthost IP_ADDRESS_OF_THE_BOX_SCP
 
 icinga2core=icinga2core.stxt.media.int
 sshoptions="-q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=Error -o BatchMode=yes"
